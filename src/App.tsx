@@ -1,3 +1,5 @@
+import ExpenseTable from "./ExpenseTable";
+
 export default function App() {
   return (
     <div className="app">
@@ -6,6 +8,7 @@ export default function App() {
       </header>
       <main className="page">
         <h1 className="page-title">Expenses</h1>
+        <ExpenseTable />
       </main>
     </div>
   );
