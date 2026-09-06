@@ -74,25 +74,6 @@ body {
   color: var(--ink-strong);
 }
 
-@media (max-width: 600px) {
-  .page {
-    padding-top: 40px;
-  }
-
-  .page-title {
-    font-size: 32px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -120,9 +101,19 @@ body {
   padding: 0 0 8px;
   font-size: 12px;
   font-weight: 400;
-  color: var(--faint);
+  color: var(--muted);
   text-align: left;
   border-bottom: 1px solid var(--rule);
+}
+
+/* Headers sit over their values, so they follow the column's alignment. */
+.ledger th.col-number {
+  padding-right: 8px;
+  text-align: right;
+}
+
+.ledger th.col-person {
+  text-align: center;
 }
 
 .ledger td {
@@ -214,40 +205,113 @@ body {
   opacity: 1;
 }
 
+.add-row-line td {
+  border-bottom: 0;
+}
+
 .add-row {
   display: block;
   width: 100%;
-  margin-top: 4px;
   padding: 8px 0;
   border: 0;
   border-radius: 3px;
   background: transparent;
   font: inherit;
   font-size: 14px;
-  color: var(--faint);
+  color: var(--muted);
   text-align: left;
   cursor: pointer;
 }
 
 .add-row:hover {
   background: var(--hover);
+  color: var(--ink);
+}
+
+.ledger tfoot th,
+.ledger tfoot td {
+  padding: 14px 0 0;
+  border-top: 1px solid var(--ink-strong);
+  border-bottom: 0;
+  vertical-align: baseline;
+}
+
+.owes-label {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-strong);
+  text-align: left;
+}
+
+.ledger tfoot .owes-total {
+  padding-right: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.owes-amount {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--ink-strong);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.unassigned {
+  margin: 12px 0 0;
+  font-size: 13px;
   color: var(--muted);
 }
 
+/* Responsive and preference overrides last, so they win over the rules above. */
 @media (max-width: 600px) {
+  :root {
+    --gutter: 16px;
+  }
+
+  .page {
+    padding-top: 40px;
+  }
+
+  .page-title {
+    font-size: 32px;
+  }
+
+  /* Tight enough that all three people stay on screen without scrolling. */
   .ledger {
+    min-width: 380px;
     font-size: 14px;
   }
 
-  .col-number {
-    width: 64px;
+  .ledger .col-number {
+    width: 54px;
   }
 
-  .col-person {
-    width: 60px;
+  .ledger .col-person {
+    width: 54px;
   }
 
   .ledger th {
-    font-size: 11px;
+    font-size: 10px;
+  }
+
+  .ledger tfoot .owes-amount {
+    font-size: 12px;
+  }
+
+  .ledger tfoot .owes-total {
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }

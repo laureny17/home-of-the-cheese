@@ -1,9 +1,11 @@
 import { PEOPLE } from "./people";
 import { useExpenses } from "./expenses";
+import { computeTotals, formatMoney } from "./totals";
 
 export default function ExpenseTable() {
   const { expenses, updateExpense, toggleShare, addExpense, removeExpense } =
     useExpenses();
+  const { perPerson, grandTotal, unassigned } = computeTotals(expenses);
 
   return (
     <>
@@ -92,12 +94,37 @@ export default function ExpenseTable() {
                 </td>
               </tr>
             ))}
+            <tr className="add-row-line">
+              <td colSpan={4 + PEOPLE.length}>
+                <button type="button" className="add-row" onClick={addExpense}>
+                  + Add item
+                </button>
+              </td>
+            </tr>
           </tbody>
+          <tfoot>
+            <tr>
+              <th scope="row" className="col-item owes-label">
+                Owes
+              </th>
+              <td className="col-number owes-total" colSpan={2}>
+                {formatMoney(grandTotal)}
+              </td>
+              {PEOPLE.map((person) => (
+                <td key={person} className="col-person owes-amount">
+                  {formatMoney(perPerson[person])}
+                </td>
+              ))}
+              <td className="col-remove" />
+            </tr>
+          </tfoot>
         </table>
       </div>
-      <button type="button" className="add-row" onClick={addExpense}>
-        + Add item
-      </button>
+      {unassigned > 0 && (
+        <p className="unassigned">
+          {formatMoney(unassigned)} isn't checked off to anyone yet.
+        </p>
+      )}
     </>
   );
 }
