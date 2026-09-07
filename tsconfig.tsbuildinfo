@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/expensetable.tsx","./src/expenses.ts","./src/main.tsx","./src/people.ts","./src/totals.ts","./src/vite-env.d.ts"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/expensetable.tsx","./src/expenses.ts","./src/main.tsx","./src/people.ts","./src/totals.ts","./src/vite-env.d.ts","./api/parse-receipt.ts"],"version":"5.9.3"}
