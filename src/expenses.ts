@@ -10,15 +10,23 @@ export type Expense = {
   sharedBy: Record<Person, boolean>;
 };
 
+export type ScannedItem = { name: string; cost: number; quantity: number };
+
 const STORAGE_KEY = "home-of-the-cheese.expenses";
 
 const newId = () => Math.random().toString(36).slice(2, 10);
 
-export function blankExpense(): Expense {
+function noShares(): Record<Person, boolean> {
   const sharedBy = {} as Record<Person, boolean>;
   for (const person of PEOPLE) sharedBy[person] = false;
-  return { id: newId(), name: "", cost: "", quantity: "1", sharedBy };
+  return sharedBy;
 }
+
+export function blankExpense(): Expense {
+  return { id: newId(), name: "", cost: "", quantity: "1", sharedBy: noShares() };
+}
+
+const isUntouched = (expense: Expense) => expense.name === "" && expense.cost === "";
 
 /** Trusts nothing from storage: a hand-edited or stale entry falls back to a blank row. */
 function reviveExpense(raw: unknown): Expense | null {
@@ -76,11 +84,27 @@ export function useExpenses() {
 
   const addExpense = () => setExpenses((current) => [...current, blankExpense()]);
 
+  /** Nobody is checked off on a scanned item; that's still the house's call. */
+  const addScannedItems = (items: ScannedItem[]) =>
+    setExpenses((current) => {
+      const rows: Expense[] = items.map((item) => ({
+        id: newId(),
+        name: item.name,
+        cost: item.cost.toFixed(2),
+        quantity: String(item.quantity),
+        sharedBy: noShares(),
+      }));
+      if (rows.length === 0) return current;
+      // A single empty starter row is replaced rather than left above the scan.
+      const startsEmpty = current.length === 1 && isUntouched(current[0]);
+      return startsEmpty ? rows : [...current, ...rows];
+    });
+
   const removeExpense = (id: string) =>
     setExpenses((current) => {
       const remaining = current.filter((expense) => expense.id !== id);
       return remaining.length > 0 ? remaining : [blankExpense()];
     });
 
-  return { expenses, updateExpense, toggleShare, addExpense, removeExpense };
+  return { expenses, updateExpense, toggleShare, addExpense, addScannedItems, removeExpense };
 }
