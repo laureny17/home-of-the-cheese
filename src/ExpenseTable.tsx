@@ -1,11 +1,48 @@
+import { useRef, useState } from "react";
 import { PEOPLE } from "./people";
 import { useExpenses } from "./expenses";
+import { scanReceipt } from "./scanReceipt";
 import { computeTotals, formatMoney } from "./totals";
 
 export default function ExpenseTable() {
-  const { expenses, updateExpense, toggleShare, addExpense, removeExpense } =
-    useExpenses();
+  const {
+    expenses,
+    updateExpense,
+    toggleShare,
+    addExpense,
+    addScannedItems,
+    removeExpense,
+  } = useExpenses();
   const { perPerson, grandTotal, unassigned } = computeTotals(expenses);
+
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanNote, setScanNote] = useState<string | null>(null);
+
+  async function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    // Reset first, so picking the same photo twice still fires a change event.
+    event.target.value = "";
+    if (!file) return;
+
+    setScanning(true);
+    setScanNote(null);
+    try {
+      const items = await scanReceipt(file);
+      if (items.length === 0) {
+        setScanNote("No items found on that photo. Try a clearer shot of the receipt.");
+      } else {
+        addScannedItems(items);
+        setScanNote(
+          `Added ${items.length} item${items.length === 1 ? "" : "s"}. Check the costs, then tick who's in.`,
+        );
+      }
+    } catch (error) {
+      setScanNote(error instanceof Error ? error.message : "Couldn't read the receipt. Try again.");
+    } finally {
+      setScanning(false);
+    }
+  }
 
   return (
     <>
@@ -96,9 +133,19 @@ export default function ExpenseTable() {
             ))}
             <tr className="add-row-line">
               <td colSpan={4 + PEOPLE.length}>
-                <button type="button" className="add-row" onClick={addExpense}>
-                  + Add item
-                </button>
+                <div className="row-actions">
+                  <button type="button" className="add-row" onClick={addExpense}>
+                    + Add item
+                  </button>
+                  <button
+                    type="button"
+                    className={scanning ? "add-row scanning" : "add-row"}
+                    onClick={() => fileInput.current?.click()}
+                    disabled={scanning}
+                  >
+                    {scanning ? "Reading receipt\u2026" : "Scan a receipt"}
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -120,6 +167,15 @@ export default function ExpenseTable() {
           </tfoot>
         </table>
       </div>
+      <input
+        ref={fileInput}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="visually-hidden"
+        onChange={handleFile}
+      />
+      {scanNote && <p className="scan-note">{scanNote}</p>}
       {unassigned > 0 && (
         <p className="unassigned">
           {formatMoney(unassigned)} isn't checked off to anyone yet.
