@@ -170,7 +170,7 @@ export default function ExpenseTable() {
       <input
         ref={fileInput}
         type="file"
-        accept="image/*"
+        accept="image/*,.heic,.heif"
         capture="environment"
         className="visually-hidden"
         onChange={handleFile}
