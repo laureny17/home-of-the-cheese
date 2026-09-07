@@ -89,6 +89,11 @@ export async function scanReceipt(file: File): Promise<ScannedItem[]> {
     throw new Error("Couldn't reach the server. Check your connection.");
   }
 
+  // Plain `vite dev` serves the frontend but not api/, so the call 404s.
+  if (response.status === 404) {
+    throw new Error("Receipt scanning isn't available on this server. Locally, run vercel dev rather than npm run dev.");
+  }
+
   const payload: unknown = await response.json().catch(() => null);
 
   if (!response.ok) {
