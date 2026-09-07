@@ -7,9 +7,12 @@ const toNumber = (value: string) => {
 };
 
 /** Quantity defaults to 1 so an item with a cost still counts before you fill it in. */
+export function lineQuantity(expense: Expense): number {
+  return expense.quantity.trim() === "" ? 1 : toNumber(expense.quantity);
+}
+
 export function lineTotal(expense: Expense): number {
-  const quantity = expense.quantity.trim() === "" ? 1 : toNumber(expense.quantity);
-  return toNumber(expense.cost) * quantity;
+  return toNumber(expense.cost) * lineQuantity(expense);
 }
 
 export type Totals = {

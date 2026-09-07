@@ -1,7 +1,14 @@
 import { GoogleGenAI } from "@google/genai";
 
-// Reads GEMINI_API_KEY from the environment; the key never reaches the browser.
-const ai = new GoogleGenAI({});
+// The key is read server-side and never reaches the browser. Passed
+// explicitly: left implicit, a missing key silently falls back to Google's
+// application-default credentials and fails with an unrelated error.
+let client: GoogleGenAI | null = null;
+
+function geminiClient(apiKey: string): GoogleGenAI {
+  if (client === null) client = new GoogleGenAI({ apiKey });
+  return client;
+}
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 
@@ -41,7 +48,27 @@ Rules:
 
 type ParsedItem = { name: string; cost: number; quantity: number };
 
-/** The model follows the schema, but a malformed line shouldn't sink the whole receipt. */
+function field(source: unknown, ...path: string[]): unknown {
+  let value = source;
+  for (const key of path) {
+    if (typeof value !== "object" || value === null) return undefined;
+    value = (value as Record<string, unknown>)[key];
+  }
+  return value;
+}
+
+/**
+ * Turns a quota rejection into something a person can act on. The API sends a
+ * "please retry in Ns" hint, but it is not trustworthy: the free tier cap
+ * survives minutes of silence and the hint still moves around, so repeating it
+ * would promise a short wait that isn't real.
+ */
+function rateLimitMessage(error: unknown): string | null {
+  const status = field(error, "statusCode") ?? field(error, "status");
+  if (status !== 429) return null;
+  return "Gemini's free-tier quota is used up. Check your limits at ai.dev/rate-limit.";
+}
+
 function cleanItems(raw: unknown): ParsedItem[] {
   if (typeof raw !== "object" || raw === null) return [];
   const items = (raw as { items?: unknown }).items;
@@ -87,9 +114,18 @@ export default {
       );
     }
 
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error("GEMINI_API_KEY is not set; receipt scanning cannot run.");
+      return Response.json(
+        { error: "Receipt scanning isn't configured on this server." },
+        { status: 500 },
+      );
+    }
+
     let interaction;
     try {
-      interaction = await ai.interactions.create({
+      interaction = await geminiClient(apiKey).interactions.create({
         model: "gemini-3.8-flash",
         input: [
           { type: "text", text: PROMPT },
@@ -100,8 +136,17 @@ export default {
           mime_type: "application/json",
           schema: RECEIPT_SCHEMA,
         },
-      });
+      },
+      // The SDK retries four times by default. On a quota rejection each retry
+      // spends another request, so one photo can burn five of them. One photo
+      // should cost one request; the person can press the button again.
+      { maxRetries: 0 });
     } catch (error) {
+      const rateLimited = rateLimitMessage(error);
+      if (rateLimited) {
+        console.error("Gemini rate limit reached.");
+        return Response.json({ error: rateLimited }, { status: 429 });
+      }
       console.error("Gemini call failed:", error);
       return Response.json({ error: "Couldn't read the receipt. Try again." }, { status: 502 });
     }
