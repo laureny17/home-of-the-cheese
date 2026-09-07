@@ -1,7 +1,14 @@
 import { GoogleGenAI } from "@google/genai";
 
-// Reads GEMINI_API_KEY from the environment; the key never reaches the browser.
-const ai = new GoogleGenAI({});
+// The key is read server-side and never reaches the browser. Passed
+// explicitly: left implicit, a missing key silently falls back to Google's
+// application-default credentials and fails with an unrelated error.
+let client: GoogleGenAI | null = null;
+
+function geminiClient(apiKey: string): GoogleGenAI {
+  if (client === null) client = new GoogleGenAI({ apiKey });
+  return client;
+}
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 
@@ -87,9 +94,18 @@ export default {
       );
     }
 
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      console.error("GEMINI_API_KEY is not set; receipt scanning cannot run.");
+      return Response.json(
+        { error: "Receipt scanning isn't configured on this server." },
+        { status: 500 },
+      );
+    }
+
     let interaction;
     try {
-      interaction = await ai.interactions.create({
+      interaction = await geminiClient(apiKey).interactions.create({
         model: "gemini-3.8-flash",
         input: [
           { type: "text", text: PROMPT },
