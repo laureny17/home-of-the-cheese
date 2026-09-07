@@ -13,6 +13,8 @@ export type Expense = {
 export type ScannedItem = { name: string; cost: number; quantity: number };
 
 const STORAGE_KEY = "home-of-the-cheese.expenses";
+/** Remembered so a refresh doesn't hide the split button over rows still on screen. */
+const SCANNED_KEY = "home-of-the-cheese.scanned";
 
 const newId = () => Math.random().toString(36).slice(2, 10);
 
@@ -57,8 +59,17 @@ function loadExpenses(): Expense[] {
   }
 }
 
+function loadScanned(): boolean {
+  try {
+    return window.localStorage.getItem(SCANNED_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
 export function useExpenses() {
   const [expenses, setExpenses] = useState<Expense[]>(loadExpenses);
+  const [hasScanned, setHasScanned] = useState<boolean>(loadScanned);
 
   useEffect(() => {
     try {
@@ -67,6 +78,14 @@ export function useExpenses() {
       // Storage can be full or blocked; the table still works for this session.
     }
   }, [expenses]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(SCANNED_KEY, String(hasScanned));
+    } catch {
+      // Same as above: losing this only costs the button after a refresh.
+    }
+  }, [hasScanned]);
 
   const updateExpense = (id: string, changes: Partial<Omit<Expense, "id" | "sharedBy">>) =>
     setExpenses((current) =>
@@ -85,7 +104,9 @@ export function useExpenses() {
   const addExpense = () => setExpenses((current) => [...current, blankExpense()]);
 
   /** Nobody is checked off on a scanned item; that's still the house's call. */
-  const addScannedItems = (items: ScannedItem[]) =>
+  const addScannedItems = (items: ScannedItem[]) => {
+    if (items.length === 0) return;
+    setHasScanned(true);
     setExpenses((current) => {
       const rows: Expense[] = items.map((item) => ({
         id: newId(),
@@ -94,11 +115,11 @@ export function useExpenses() {
         quantity: String(item.quantity),
         sharedBy: noShares(),
       }));
-      if (rows.length === 0) return current;
       // A single empty starter row is replaced rather than left above the scan.
       const startsEmpty = current.length === 1 && isUntouched(current[0]);
       return startsEmpty ? rows : [...current, ...rows];
     });
+  };
 
   const removeExpense = (id: string) =>
     setExpenses((current) => {
@@ -106,5 +127,13 @@ export function useExpenses() {
       return remaining.length > 0 ? remaining : [blankExpense()];
     });
 
-  return { expenses, updateExpense, toggleShare, addExpense, addScannedItems, removeExpense };
+  return {
+    expenses,
+    hasScanned,
+    updateExpense,
+    toggleShare,
+    addExpense,
+    addScannedItems,
+    removeExpense,
+  };
 }

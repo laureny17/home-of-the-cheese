@@ -293,6 +293,128 @@ body {
   color: var(--muted);
 }
 
+.split-actions {
+  margin-top: 28px;
+}
+
+.generate-split {
+  padding: 9px 16px;
+  border: 1px solid var(--ink-strong);
+  border-radius: 4px;
+  background: var(--ink-strong);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--surface);
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+.generate-split:hover {
+  opacity: 0.82;
+}
+
+.split {
+  margin-top: 56px;
+  padding-top: 28px;
+  border-top: 1px solid var(--rule);
+  /* Keeps the heading off the very top edge once it's scrolled to. */
+  scroll-margin-top: 24px;
+}
+
+.split-heading {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.split-person {
+  margin-top: 32px;
+}
+
+.split-name {
+  margin: 0 0 10px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--ink-strong);
+}
+
+.split-empty {
+  margin: 0;
+  font-size: 14px;
+  color: var(--faint);
+}
+
+.split-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.split-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 14px;
+}
+
+.split-line-note {
+  margin-left: 8px;
+  font-size: 12px;
+  color: var(--faint);
+}
+
+.split-line-amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.split-tally {
+  margin: 10px 0 0;
+}
+
+.split-tally-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 3px 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.split-tally dt,
+.split-tally dd {
+  margin: 0;
+}
+
+.split-tally dd {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.split-tally-total {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ink-strong);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink-strong);
+}
+
+.split-footnote {
+  margin: 40px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 /* Responsive and preference overrides last, so they win over the rules above. */
 @media (max-width: 600px) {
   :root {
@@ -340,5 +462,6 @@ body {
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

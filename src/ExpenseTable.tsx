@@ -1,12 +1,15 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PEOPLE } from "./people";
 import { useExpenses } from "./expenses";
 import { scanReceipt } from "./scanReceipt";
+import { computeSplit } from "./split";
+import SplitSummary from "./SplitSummary";
 import { computeTotals, formatMoney } from "./totals";
 
 export default function ExpenseTable() {
   const {
     expenses,
+    hasScanned,
     updateExpense,
     toggleShare,
     addExpense,
@@ -18,6 +21,23 @@ export default function ExpenseTable() {
   const fileInput = useRef<HTMLInputElement>(null);
   const [scanning, setScanning] = useState(false);
   const [scanNote, setScanNote] = useState<string | null>(null);
+
+  const splitSection = useRef<HTMLElement>(null);
+  // A counter rather than a flag, so pressing the button again scrolls again.
+  const [splitRequests, setSplitRequests] = useState(0);
+  const showSplit = splitRequests > 0;
+
+  // Runs after the summary is in the DOM, which is what makes it scrollable to.
+  useEffect(() => {
+    if (splitRequests === 0) return;
+    const smooth =
+      typeof window.matchMedia !== "function" ||
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    splitSection.current?.scrollIntoView({
+      behavior: smooth ? "smooth" : "auto",
+      block: "start",
+    });
+  }, [splitRequests]);
 
   async function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -181,6 +201,18 @@ export default function ExpenseTable() {
           {formatMoney(unassigned)} isn't checked off to anyone yet.
         </p>
       )}
+      {hasScanned && (
+        <div className="split-actions">
+          <button
+            type="button"
+            className="generate-split"
+            onClick={() => setSplitRequests((count) => count + 1)}
+          >
+            Generate split
+          </button>
+        </div>
+      )}
+      {showSplit && <SplitSummary ref={splitSection} split={computeSplit(expenses)} />}
     </>
   );
 }
