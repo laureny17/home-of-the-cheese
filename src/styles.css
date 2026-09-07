@@ -209,10 +209,15 @@ body {
   border-bottom: 0;
 }
 
+.row-actions {
+  display: flex;
+  gap: 12px;
+  /* Pulls the first label's text back to the Item column's left edge. */
+  margin-left: -8px;
+}
+
 .add-row {
-  display: block;
-  width: 100%;
-  padding: 8px 0;
+  padding: 8px;
   border: 0;
   border-radius: 3px;
   background: transparent;
@@ -223,9 +228,31 @@ body {
   cursor: pointer;
 }
 
-.add-row:hover {
+.add-row:hover:not(:disabled) {
   background: var(--hover);
   color: var(--ink);
+}
+
+.add-row:disabled {
+  color: var(--faint);
+  cursor: default;
+}
+
+/* Reading a receipt takes a while; a slow pulse shows it hasn't stalled. */
+.add-row.scanning {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.scan-note {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--muted);
 }
 
 .ledger tfoot th,
