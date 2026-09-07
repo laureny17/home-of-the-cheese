@@ -57,26 +57,18 @@ function field(source: unknown, ...path: string[]): unknown {
   return value;
 }
 
-/** Turns a quota rejection into something a person can act on. */
+/**
+ * Turns a quota rejection into something a person can act on. The API sends a
+ * "please retry in Ns" hint, but it is not trustworthy: the free tier cap
+ * survives minutes of silence and the hint still moves around, so repeating it
+ * would promise a short wait that isn't real.
+ */
 function rateLimitMessage(error: unknown): string | null {
   const status = field(error, "statusCode") ?? field(error, "status");
   if (status !== 429) return null;
-
-  const text = [
-    field(error, "message"),
-    field(error, "error", "message"),
-    field(error, "cause", "message"),
-  ]
-    .filter((value): value is string => typeof value === "string")
-    .join(" ");
-
-  const seconds = /retry in ([\d.]+)s/i.exec(text);
-  return seconds
-    ? `Gemini's rate limit is hit. Try again in about ${Math.ceil(Number(seconds[1]))} seconds.`
-    : "Gemini's rate limit is hit. Wait a minute and try again.";
+  return "Gemini's free-tier quota is used up. Check your limits at ai.dev/rate-limit.";
 }
 
-/** The model follows the schema, but a malformed line shouldn't sink the whole receipt. */
 function cleanItems(raw: unknown): ParsedItem[] {
   if (typeof raw !== "object" || raw === null) return [];
   const items = (raw as { items?: unknown }).items;
