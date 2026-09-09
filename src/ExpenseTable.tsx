@@ -1,9 +1,10 @@
 import { useRef, useState } from "react";
-import { PEOPLE } from "./people";
+import { PEOPLE, type Person } from "./people";
 import { expensesFor, type ExpenseStore } from "./expenses";
 import { scanReceipt } from "./scanReceipt";
 import { computeSplit } from "./split";
-import SplitSummary from "./SplitSummary";
+import Modal from "./Modal";
+import PersonReceipt from "./PersonReceipt";
 import { PencilIcon } from "./icons";
 import { computeTotals, formatMoney } from "./totals";
 
@@ -17,6 +18,7 @@ export default function ExpenseTable({
   const { updateExpense, toggleShare, addExpense, addScannedItems, removeExpense } = store;
   // Read-only until someone chooses to edit, so a stray tap can't move money.
   const [editing, setEditing] = useState(false);
+  const [openPerson, setOpenPerson] = useState<Person | null>(null);
   const expenses = expensesFor(store.expenses, receiptId);
   const { perPerson, grandTotal, unassigned } = computeTotals(expenses);
   const split = computeSplit(expenses);
@@ -197,6 +199,19 @@ export default function ExpenseTable({
         </p>
       )}
       <div className="split-actions">
+        <div className="person-receipts">
+          <span className="person-receipts-label">receipts:</span>
+          {PEOPLE.map((person) => (
+            <button
+              key={person}
+              type="button"
+              className="person-chip"
+              onClick={() => setOpenPerson(person)}
+            >
+              {person}
+            </button>
+          ))}
+        </div>
         {editing ? (
           <button type="button" className="action save" onClick={() => setEditing(false)}>
             Save changes
@@ -208,9 +223,11 @@ export default function ExpenseTable({
           </button>
         )}
       </div>
-      {/* Once a receipt has anything on it the split is always worth showing,
-          so it is no longer behind a button. */}
-      {expenses.length > 0 && <SplitSummary split={split} />}
+      {openPerson && (
+        <Modal title={`${openPerson}'s share`} onClose={() => setOpenPerson(null)}>
+          <PersonReceipt split={split} person={openPerson} />
+        </Modal>
+      )}
     </>
   );
 }
