@@ -428,6 +428,19 @@ body {
   gap: 10px;
 }
 
+/* Date and payer travel as a pair, so a phone can drop both to a second row. */
+.receipt-meta-fields {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Labels on a wide screen, icons where there is no room for words. */
+.action-icon {
+  display: none;
+  align-items: center;
+}
+
 .receipt-name {
   /* Sized rather than greedy, so the date and payer stay roughly where their
      static counterparts sit and editing doesn't rearrange the line. */
@@ -1043,6 +1056,74 @@ body {
   /* The whole line opens the receipt, so the arrow is only spending width. */
   .receipt-arrow {
     display: none;
+  }
+
+  /*
+   * Editing on a phone: the name owns the first row with delete and save
+   * beside it, and the date and payer take the row underneath, where they
+   * have the width to be legible.
+   */
+  .receipt-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "name actions"
+      "meta meta";
+    gap: 8px 10px;
+    align-items: center;
+  }
+
+  .receipt-header {
+    display: contents;
+  }
+
+  .receipt-summary {
+    grid-area: name;
+  }
+
+  .receipt-name {
+    grid-area: name;
+    flex: none;
+  }
+
+  .receipt-meta-fields {
+    grid-area: meta;
+  }
+
+  .row-end {
+    grid-area: actions;
+    margin-left: 0;
+  }
+
+  .receipt-date {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .receipt-payer {
+    flex: none;
+  }
+
+  .action-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .action-icon {
+    display: inline-flex;
+  }
+
+  .action {
+    width: 32px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .icon-action {
+    width: 32px;
   }
 
   .receipt-summary {

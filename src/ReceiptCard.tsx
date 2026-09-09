@@ -3,7 +3,7 @@ import { PEOPLE, type Person } from "./people";
 import ExpenseTable from "./ExpenseTable";
 import ReceiptHeader from "./ReceiptHeader";
 import Modal from "./Modal";
-import { PencilIcon } from "./icons";
+import { CheckIcon, PencilIcon, TrashIcon } from "./icons";
 import { expensesFor, type ExpenseStore } from "./expenses";
 import type { Receipt } from "./receipts";
 import { computeSplit } from "./split";
@@ -101,12 +101,24 @@ export default function ReceiptCard({
               <button
                 type="button"
                 className="action danger"
+                aria-label={`Delete ${label}`}
                 onClick={() => setConfirmingDelete(true)}
               >
-                delete
+                <span className="action-icon">
+                  <TrashIcon />
+                </span>
+                <span className="action-label">delete</span>
               </button>
-              <button type="button" className="action save" onClick={saveDetails}>
-                Save changes
+              <button
+                type="button"
+                className="action save"
+                aria-label="Save changes"
+                onClick={saveDetails}
+              >
+                <span className="action-icon">
+                  <CheckIcon />
+                </span>
+                <span className="action-label">Save changes</span>
               </button>
             </>
           ) : (
