@@ -13,3 +13,14 @@ export function PencilIcon() {
     </svg>
   );
 }
+
+/** Grey circled i, for opening the unnetted detail. */
+export function InfoIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+      <circle cx="8" cy="8" r="6.6" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="8" cy="4.9" r="0.85" fill="currentColor" />
+      <path d="M8 7.1v4.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
