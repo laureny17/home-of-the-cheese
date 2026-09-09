@@ -43,6 +43,37 @@ export function blankExpense(): Expense {
 
 const isUntouched = (expense: Expense) => expense.name === "" && expense.cost === "";
 
+/** Above this, a line is left as one row rather than flooding the table. */
+const MAX_UNIT_ROWS = 20;
+
+/**
+ * A receipt line for three packs of dumplings becomes three rows, because the
+ * house may not split them the same way: one shared, two taken by one person.
+ * The cost from the parser is already per unit, so the money is unchanged.
+ */
+function unitRows(item: ScannedItem): Expense[] {
+  const count = Math.trunc(item.quantity);
+  const asOneRow = !Number.isFinite(count) || count < 2 || count > MAX_UNIT_ROWS;
+  if (asOneRow) {
+    return [
+      {
+        id: newId(),
+        name: item.name,
+        cost: item.cost.toFixed(2),
+        quantity: String(item.quantity),
+        sharedBy: noShares(),
+      },
+    ];
+  }
+  return Array.from({ length: count }, () => ({
+    id: newId(),
+    name: item.name,
+    cost: item.cost.toFixed(2),
+    quantity: "1",
+    sharedBy: noShares(),
+  }));
+}
+
 function toNumberOrNull(value: string): number | null {
   const trimmed = value.trim();
   if (trimmed === "") return null;
@@ -225,13 +256,7 @@ export function useExpenses(receiptId: string | null) {
     setHasScanned(true);
 
     let sortOrder = nextSortOrder();
-    const rows: Expense[] = items.map((item) => ({
-      id: newId(),
-      name: item.name,
-      cost: item.cost.toFixed(2),
-      quantity: String(item.quantity),
-      sharedBy: noShares(),
-    }));
+    const rows: Expense[] = items.flatMap(unitRows);
     for (const row of rows) order.current.set(row.id, sortOrder++);
 
     const current = latest.current;
