@@ -107,9 +107,6 @@ export default function ExpenseTable({
               <th scope="col" className="col-number">
                 Cost
               </th>
-              <th scope="col" className="col-number">
-                Qty
-              </th>
               {PEOPLE.map((person) => (
                 <th scope="col" key={person} className="col-person">
                   {person}
@@ -150,22 +147,6 @@ export default function ExpenseTable({
                     onKeyDown={(event) => handleRowKey(event, expense)}
                   />
                 </td>
-                <td className="col-number">
-                  <input
-                    className="cell-input align-right"
-                    readOnly={!editing}
-                    value={expense.quantity}
-                    placeholder="1"
-                    inputMode="numeric"
-                    aria-label={`Quantity of ${expense.name || "untitled item"}`}
-                    onChange={(event) =>
-                      updateExpense(expense.id, {
-                        quantity: event.target.value,
-                      })
-                    }
-                    onKeyDown={(event) => handleRowKey(event, expense)}
-                  />
-                </td>
                 {PEOPLE.map((person) => (
                   <td key={person} className="col-person">
                     <input
@@ -193,7 +174,7 @@ export default function ExpenseTable({
             ))}
             {editing && (
             <tr className="add-row-line">
-              <td colSpan={4 + PEOPLE.length}>
+              <td colSpan={3 + PEOPLE.length}>
                 <div className="row-actions">
                   <button type="button" className="add-row" onClick={() => addExpense(receiptId)}>
                     + Add item
@@ -218,7 +199,7 @@ export default function ExpenseTable({
               <th scope="row" className="col-item owes-label">
                 Totals
               </th>
-              <td className="col-number owes-total" colSpan={2}>
+              <td className="col-number owes-total">
                 {formatMoney(grandTotal)}
               </td>
               {PEOPLE.map((person) => (
