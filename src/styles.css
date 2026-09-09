@@ -92,6 +92,10 @@ body {
   color: var(--ink-strong);
 }
 
+.name-short {
+  display: none;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -171,6 +175,26 @@ body {
 
 .col-item .cell-input {
   padding-left: 0;
+}
+
+/* Matches .cell-input's metrics so switching to editing doesn't shift a row. */
+.cell-text {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  white-space: nowrap;
+  color: var(--ink);
+  /* Swipeable without a scrollbar under every single item. */
+  scrollbar-width: none;
+}
+
+.cell-text::-webkit-scrollbar {
+  display: none;
+}
+
+.cell-empty {
+  color: #c7c6c3;
 }
 
 .cell-input.align-right {
@@ -422,6 +446,19 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* Date and payer travel as a pair, so a phone can drop both to a second row. */
+.receipt-meta-fields {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Labels on a wide screen, icons where there is no room for words. */
+.action-icon {
+  display: none;
+  align-items: center;
 }
 
 .receipt-name {
@@ -1026,30 +1063,194 @@ body {
     font-size: 32px;
   }
 
-  /* Tight enough that all three people stay on screen without scrolling. */
+  /*
+   * A receipt title is as long as the shop is called, and it was being held to
+   * one 24px line, so anything that wrapped sat on top of the row underneath.
+   * The line now wraps: name first, then date, total and payer beneath it.
+   */
+  .receipt-top {
+    align-items: flex-start;
+    min-height: 0;
+  }
+
+  /* The whole line opens the receipt, so the arrow is only spending width. */
+  .receipt-arrow {
+    display: none;
+  }
+
+  /*
+   * Editing on a phone: the name owns the first row with delete and save
+   * beside it, and the date and payer take the row underneath, where they
+   * have the width to be legible.
+   */
+  .receipt-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "name actions"
+      "meta meta";
+    gap: 8px 10px;
+    align-items: center;
+  }
+
+  .receipt-header {
+    display: contents;
+  }
+
+  .receipt-summary {
+    grid-area: name;
+  }
+
+  .receipt-name {
+    grid-area: name;
+    flex: none;
+  }
+
+  .receipt-meta-fields {
+    grid-area: meta;
+  }
+
+  .row-end {
+    grid-area: actions;
+    margin-left: 0;
+  }
+
+  .receipt-date {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .receipt-payer {
+    flex: none;
+  }
+
+  .action-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .action-icon {
+    display: inline-flex;
+  }
+
+  .action {
+    width: 32px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .icon-action {
+    width: 32px;
+  }
+
+  .receipt-summary {
+    height: auto;
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+
+  .receipt-title {
+    flex: 1 1 100%;
+    height: auto;
+  }
+
+  .receipt-figures,
+  .receipt-debts {
+    padding-left: 0;
+    font-size: 12px;
+    gap: 2px 12px;
+  }
+
+  .receipt-body {
+    padding-left: 0;
+  }
+
+  /* Item, cost and three initials fit a phone without sideways scrolling. */
   .ledger {
-    min-width: 380px;
+    min-width: 0;
     font-size: 14px;
   }
 
   .ledger .col-number {
-    width: 54px;
+    width: 52px;
   }
 
+  /* Wide enough that two totals underneath keep clear air between them. */
   .ledger .col-person {
-    width: 54px;
+    width: 46px;
+  }
+
+  .ledger .col-remove {
+    width: 22px;
+  }
+
+  /* At 22px the button used to sit 4px wider than its column, which was the
+     whole of the horizontal scrollbar that appeared while editing. */
+  .remove {
+    width: 18px;
   }
 
   .ledger th {
-    font-size: 10px;
+    font-size: 11px;
   }
 
-  .ledger tfoot .owes-amount {
-    font-size: 12px;
+  .name-full {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
   }
 
+  .name-short {
+    display: inline;
+  }
+
+  .ledger tfoot .owes-amount,
   .ledger tfoot .owes-total {
-    font-size: 12px;
+    font-size: 11px;
+  }
+
+  /* Stacked, because three labelled fields never fit side by side. */
+  .composer-fields {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .field-input {
+    width: 100%;
+  }
+
+  .scan-prompt {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .settle,
+  .split {
+    max-width: none;
+  }
+
+  .person-receipts {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .split-actions {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .modal {
+    max-height: 88vh;
+  }
+
+  .pagination {
+    gap: 10px;
   }
 }
 

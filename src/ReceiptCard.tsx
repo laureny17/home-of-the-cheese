@@ -3,21 +3,21 @@ import { PEOPLE, type Person } from "./people";
 import ExpenseTable from "./ExpenseTable";
 import ReceiptHeader from "./ReceiptHeader";
 import Modal from "./Modal";
-import { PencilIcon } from "./icons";
+import { CheckIcon, PencilIcon, TrashIcon } from "./icons";
 import { expensesFor, type ExpenseStore } from "./expenses";
 import type { Receipt } from "./receipts";
 import { computeSplit } from "./split";
 import { formatMoney } from "./totals";
 
-/** "2026-09-09" → "9 Sep 2026", without dragging in a date library. */
+/**
+ * "2026-09-09" becomes "09/09/26". Built from the stored parts rather than a
+ * locale, which would reorder the day and month depending on where the browser
+ * thinks it is.
+ */
 export function formatDate(iso: string): string {
-  const [year, month, day] = iso.split("-").map(Number);
+  const [year, month, day] = iso.split("-");
   if (!year || !month || !day) return iso;
-  return new Date(year, month - 1, day).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return `${month.padStart(2, "0")}/${day.padStart(2, "0")}/${year.slice(-2)}`;
 }
 
 export default function ReceiptCard({
@@ -76,7 +76,14 @@ export default function ReceiptCard({
         {editing && draft ? (
           <ReceiptHeader draft={draft} onChange={setDraft} />
         ) : (
-          <button type="button" className="receipt-summary" onClick={onToggle}>
+          <button
+            type="button"
+            className="receipt-summary"
+            // The arrow is hidden on a phone, so the line itself carries the
+            // state as well as the tap.
+            aria-expanded={expanded}
+            onClick={onToggle}
+          >
             <span className="receipt-title">{label}</span>
             <span className="receipt-meta">{formatDate(receipt.purchasedOn)}</span>
             <span className="receipt-total">{formatMoney(split.assignedTotal)}</span>
@@ -94,12 +101,24 @@ export default function ReceiptCard({
               <button
                 type="button"
                 className="action danger"
+                aria-label={`Delete ${label}`}
                 onClick={() => setConfirmingDelete(true)}
               >
-                delete
+                <span className="action-icon">
+                  <TrashIcon />
+                </span>
+                <span className="action-label">delete</span>
               </button>
-              <button type="button" className="action save" onClick={saveDetails}>
-                Save changes
+              <button
+                type="button"
+                className="action save"
+                aria-label="Save changes"
+                onClick={saveDetails}
+              >
+                <span className="action-icon">
+                  <CheckIcon />
+                </span>
+                <span className="action-label">Save changes</span>
               </button>
             </>
           ) : (

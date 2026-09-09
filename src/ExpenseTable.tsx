@@ -109,7 +109,12 @@ export default function ExpenseTable({
               </th>
               {PEOPLE.map((person) => (
                 <th scope="col" key={person} className="col-person">
-                  {person}
+                  {/* On a phone the column is an initial. The full name stays in
+                      the markup so the checkboxes keep their proper heading. */}
+                  <span className="name-full">{person}</span>
+                  <span className="name-short" aria-hidden="true">
+                    {person.slice(0, 1)}
+                  </span>
                 </th>
               ))}
               <th scope="col" className="col-remove">
@@ -121,17 +126,28 @@ export default function ExpenseTable({
             {expenses.map((expense) => (
               <tr key={expense.id} data-row={expense.id}>
                 <td className="col-item">
-                  <input
-                    className="cell-input"
-                    readOnly={!editing}
-                    value={expense.name}
-                    placeholder="Untitled"
-                    aria-label="Item"
-                    onChange={(event) =>
-                      updateExpense(expense.id, { name: event.target.value })
-                    }
-                    onKeyDown={(event) => handleRowKey(event, expense)}
-                  />
+                  {editing ? (
+                    <input
+                      className="cell-input"
+                      value={expense.name}
+                      placeholder="Untitled"
+                      aria-label="Item"
+                      onChange={(event) =>
+                        updateExpense(expense.id, { name: event.target.value })
+                      }
+                      onKeyDown={(event) => handleRowKey(event, expense)}
+                    />
+                  ) : (
+                    /* Plain text rather than a locked input, so a name too long
+                       for a phone can be swiped along to read the rest. */
+                    <div className="cell-text">
+                      {expense.name === "" ? (
+                        <span className="cell-empty">untitled</span>
+                      ) : (
+                        expense.name
+                      )}
+                    </div>
+                  )}
                 </td>
                 <td className="col-number">
                   <input
