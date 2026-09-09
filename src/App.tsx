@@ -83,6 +83,7 @@ export default function App() {
                   expanded={openIds.has(receipt.id)}
                   onToggle={() => toggle(receipt.id)}
                   onChange={receiptStore.saveReceipt}
+                  onDelete={() => void receiptStore.removeReceipt(receipt.id)}
                 />
               ))}
             </div>

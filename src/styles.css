@@ -968,6 +968,45 @@ body {
   color: var(--muted);
 }
 
+/* Destructive, so it reads as a warning without shouting from the outset. */
+.action.danger {
+  color: var(--muted);
+}
+
+.action.danger:hover {
+  border-color: #b3261e;
+  background: var(--surface);
+  color: #b3261e;
+}
+
+.action.danger-solid {
+  border-color: #b3261e;
+  background: #b3261e;
+  color: var(--surface);
+}
+
+.action.danger-solid:hover {
+  background: #8f1e18;
+  color: var(--surface);
+}
+
+.confirm-text {
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.confirm-actions .action {
+  margin-left: 0;
+}
+
 /* Responsive and preference overrides last, so they win over the rules above. */
 @media (max-width: 600px) {
   :root {

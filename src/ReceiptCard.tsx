@@ -2,6 +2,7 @@ import { useState } from "react";
 import { PEOPLE, type Person } from "./people";
 import ExpenseTable from "./ExpenseTable";
 import ReceiptHeader from "./ReceiptHeader";
+import Modal from "./Modal";
 import { PencilIcon } from "./icons";
 import { expensesFor, type ExpenseStore } from "./expenses";
 import type { Receipt } from "./receipts";
@@ -25,12 +26,14 @@ export default function ReceiptCard({
   expanded,
   onToggle,
   onChange,
+  onDelete,
 }: {
   receipt: Receipt;
   store: ExpenseStore;
   expanded: boolean;
   onToggle: () => void;
   onChange: (receipt: Receipt) => void;
+  onDelete: () => void;
 }) {
   const expenses = expensesFor(store.expenses, receipt.id);
   const split = computeSplit(expenses);
@@ -42,6 +45,7 @@ export default function ReceiptCard({
   // Held while editing so nothing is written until the change is saved.
   const [draft, setDraft] = useState<Receipt | null>(null);
   const editing = draft !== null;
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   function startEditing() {
     setDraft(receipt);
@@ -67,12 +71,7 @@ export default function ReceiptCard({
         </button>
 
         {editing && draft ? (
-          <>
-            <ReceiptHeader draft={draft} onChange={setDraft} />
-            {/* Not editable, but kept on the line so all three states read
-                title, date, total. */}
-            <span className="receipt-total">{formatMoney(split.assignedTotal)}</span>
-          </>
+          <ReceiptHeader draft={draft} onChange={setDraft} />
         ) : (
           <button type="button" className="receipt-summary" onClick={onToggle}>
             <span className="receipt-title">{label}</span>
@@ -87,9 +86,18 @@ export default function ReceiptCard({
         )}
 
         {editing ? (
-          <button type="button" className="action save" onClick={saveDetails}>
-            Save changes
-          </button>
+          <>
+            <button
+              type="button"
+              className="action danger"
+              onClick={() => setConfirmingDelete(true)}
+            >
+              delete
+            </button>
+            <button type="button" className="action save" onClick={saveDetails}>
+              Save changes
+            </button>
+          </>
         ) : (
           <button
             type="button"
@@ -118,6 +126,23 @@ export default function ReceiptCard({
             </span>
           ))}
         </div>
+      )}
+
+      {confirmingDelete && (
+        <Modal title="delete this receipt?" onClose={() => setConfirmingDelete(false)}>
+          <p className="confirm-text">
+            {label} and its {expenses.length} item{expenses.length === 1 ? "" : "s"} will be
+            removed. this can't be undone.
+          </p>
+          <div className="confirm-actions">
+            <button type="button" className="action" onClick={() => setConfirmingDelete(false)}>
+              keep it
+            </button>
+            <button type="button" className="action danger-solid" onClick={onDelete}>
+              delete receipt
+            </button>
+          </div>
+        </Modal>
       )}
 
       {expanded && (
