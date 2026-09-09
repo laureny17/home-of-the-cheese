@@ -42,7 +42,14 @@ export default function NewReceipt({
           <button type="button" className="action" onClick={onDiscard}>
             discard
           </button>
-          <button type="button" className="action save" onClick={onDone}>
+          <button
+            type="button"
+            className="action save"
+            onClick={() => {
+              store.discardBlankRows(receipt.id);
+              onDone();
+            }}
+          >
             done
           </button>
         </div>

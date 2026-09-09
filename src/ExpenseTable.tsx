@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PEOPLE, type Person } from "./people";
-import { expensesFor, type ExpenseStore } from "./expenses";
+import { expensesFor, isBlankRow, type Expense, type ExpenseStore } from "./expenses";
 import { scanReceipt } from "./scanReceipt";
 import { computeSplit } from "./split";
 import Modal from "./Modal";
@@ -22,8 +22,33 @@ export default function ExpenseTable({
 }) {
   const { updateExpense, toggleShare, addExpense, addScannedItems, removeExpense } = store;
 
-  const [openPerson, setOpenPerson] = useState<Person | null>(null);
   const expenses = expensesFor(store.expenses, receiptId);
+
+  const [openPerson, setOpenPerson] = useState<Person | null>(null);
+  /** The row whose name field should take focus once React has drawn it. */
+  const [focusRow, setFocusRow] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (focusRow === null) return;
+    const input = document.querySelector<HTMLInputElement>(`[data-row="${focusRow}"] input`);
+    input?.focus();
+    setFocusRow(null);
+  }, [focusRow, expenses.length]);
+
+  /**
+   * Enter carries on to a fresh row, the way a list wants to be typed. On a row
+   * nobody has filled in there is nothing to carry on from, so it just leaves
+   * the field rather than stacking up another empty one.
+   */
+  function handleRowKey(event: React.KeyboardEvent<HTMLInputElement>, expense: Expense) {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    if (isBlankRow(expense)) {
+      event.currentTarget.blur();
+      return;
+    }
+    setFocusRow(addExpense(receiptId));
+  }
   const { perPerson, grandTotal, unassigned } = computeTotals(expenses);
   const split = computeSplit(expenses);
 
@@ -97,7 +122,7 @@ export default function ExpenseTable({
           </thead>
           <tbody>
             {expenses.map((expense) => (
-              <tr key={expense.id}>
+              <tr key={expense.id} data-row={expense.id}>
                 <td className="col-item">
                   <input
                     className="cell-input"
@@ -108,6 +133,7 @@ export default function ExpenseTable({
                     onChange={(event) =>
                       updateExpense(expense.id, { name: event.target.value })
                     }
+                    onKeyDown={(event) => handleRowKey(event, expense)}
                   />
                 </td>
                 <td className="col-number">
@@ -121,6 +147,7 @@ export default function ExpenseTable({
                     onChange={(event) =>
                       updateExpense(expense.id, { cost: event.target.value })
                     }
+                    onKeyDown={(event) => handleRowKey(event, expense)}
                   />
                 </td>
                 <td className="col-number">
@@ -136,6 +163,7 @@ export default function ExpenseTable({
                         quantity: event.target.value,
                       })
                     }
+                    onKeyDown={(event) => handleRowKey(event, expense)}
                   />
                 </td>
                 {PEOPLE.map((person) => (
@@ -170,7 +198,7 @@ export default function ExpenseTable({
                   <button type="button" className="add-row" onClick={() => addExpense(receiptId)}>
                     + Add item
                   </button>
-                  {!(composing && expenses.length === 0) && (
+                  {composing && expenses.length > 0 && (
                     <button
                       type="button"
                       className={scanning ? "add-row scanning" : "add-row"}

@@ -55,6 +55,8 @@ export default function ReceiptCard({
 
   function saveDetails() {
     if (draft) onChange(draft);
+    // Rows left blank while typing are not part of the receipt.
+    store.discardBlankRows(receipt.id);
     setDraft(null);
   }
 
