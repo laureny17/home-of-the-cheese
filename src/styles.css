@@ -42,6 +42,24 @@ body {
 
 .app {
   min-height: 100vh;
+  /*
+   * The whole interface is lowercase. Done here rather than by rewriting every
+   * string so that names people type, dates the browser formats, and anything
+   * added later all follow without having to remember.
+   */
+  text-transform: lowercase;
+}
+
+/*
+ * Browsers set text-transform: none on form controls, which stops the rule
+ * above reaching anything inside a button -- including the receipt title.
+ */
+.app button,
+.app input,
+.app select,
+.app textarea,
+.app option {
+  text-transform: inherit;
 }
 
 .topbar {
