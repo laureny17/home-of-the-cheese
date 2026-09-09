@@ -126,17 +126,28 @@ export default function ExpenseTable({
             {expenses.map((expense) => (
               <tr key={expense.id} data-row={expense.id}>
                 <td className="col-item">
-                  <input
-                    className="cell-input"
-                    readOnly={!editing}
-                    value={expense.name}
-                    placeholder="Untitled"
-                    aria-label="Item"
-                    onChange={(event) =>
-                      updateExpense(expense.id, { name: event.target.value })
-                    }
-                    onKeyDown={(event) => handleRowKey(event, expense)}
-                  />
+                  {editing ? (
+                    <input
+                      className="cell-input"
+                      value={expense.name}
+                      placeholder="Untitled"
+                      aria-label="Item"
+                      onChange={(event) =>
+                        updateExpense(expense.id, { name: event.target.value })
+                      }
+                      onKeyDown={(event) => handleRowKey(event, expense)}
+                    />
+                  ) : (
+                    /* Plain text rather than a locked input, so a name too long
+                       for a phone can be swiped along to read the rest. */
+                    <div className="cell-text">
+                      {expense.name === "" ? (
+                        <span className="cell-empty">untitled</span>
+                      ) : (
+                        expense.name
+                      )}
+                    </div>
+                  )}
                 </td>
                 <td className="col-number">
                   <input

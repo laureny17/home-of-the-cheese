@@ -177,6 +177,26 @@ body {
   padding-left: 0;
 }
 
+/* Matches .cell-input's metrics so switching to editing doesn't shift a row. */
+.cell-text {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  white-space: nowrap;
+  color: var(--ink);
+  /* Swipeable without a scrollbar under every single item. */
+  scrollbar-width: none;
+}
+
+.cell-text::-webkit-scrollbar {
+  display: none;
+}
+
+.cell-empty {
+  color: #c7c6c3;
+}
+
 .cell-input.align-right {
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -1164,6 +1184,12 @@ body {
   }
 
   .ledger .col-remove {
+    width: 22px;
+  }
+
+  /* At 22px the button used to sit 4px wider than its column, which was the
+     whole of the horizontal scrollbar that appeared while editing. */
+  .remove {
     width: 18px;
   }
 
