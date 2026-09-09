@@ -2,12 +2,9 @@ import type { Split, SplitLine } from "./split";
 import type { Person } from "./people";
 import { formatMoney } from "./totals";
 
-/** "×2 · split 3 ways" — only the parts that say something. */
+/** "split 3 ways" — said only when it is worth saying. */
 function lineNote(line: SplitLine): string {
-  const parts: string[] = [];
-  if (line.quantity !== 1) parts.push(`×${line.quantity}`);
-  if (line.sharedWays > 1) parts.push(`split ${line.sharedWays} ways`);
-  return parts.join(" · ");
+  return line.sharedWays > 1 ? `split ${line.sharedWays} ways` : "";
 }
 
 /** One person's share of a receipt, item by item. */

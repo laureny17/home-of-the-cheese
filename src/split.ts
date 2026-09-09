@@ -1,6 +1,6 @@
 import { PEOPLE, type Person } from "./people";
 import type { Expense } from "./expenses";
-import { lineQuantity, lineTotal } from "./totals";
+import { lineTotal } from "./totals";
 
 /**
  * Tax and tip aren't things anyone "bought", so they're pulled out of the item
@@ -21,7 +21,6 @@ function surchargeOf(name: string): Surcharge | null {
 export type SplitLine = {
   id: string;
   name: string;
-  quantity: number;
   /** How many people are on the row, so a share can be labelled as one. */
   sharedWays: number;
   /** This person's cut of the row. */
@@ -94,9 +93,8 @@ export function computeSplit(expenses: Expense[]): Split {
 
     const share = total / sharers.length;
     const name = expense.name.trim() === "" ? "Untitled" : expense.name.trim();
-    const quantity = lineQuantity(expense);
     for (const person of sharers) {
-      lines[person].push({ id: expense.id, name, quantity, sharedWays: sharers.length, amount: share });
+      lines[person].push({ id: expense.id, name, sharedWays: sharers.length, amount: share });
       itemsSubtotal[person] += share;
     }
   }

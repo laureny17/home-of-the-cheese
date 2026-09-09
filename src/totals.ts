@@ -6,13 +6,9 @@ const toNumber = (value: string) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
-/** Quantity defaults to 1 so an item with a cost still counts before you fill it in. */
-export function lineQuantity(expense: Expense): number {
-  return expense.quantity.trim() === "" ? 1 : toNumber(expense.quantity);
-}
-
+/** Each row is one of the thing, so a line is just its cost. */
 export function lineTotal(expense: Expense): number {
-  return toNumber(expense.cost) * lineQuantity(expense);
+  return toNumber(expense.cost);
 }
 
 export type Totals = {
