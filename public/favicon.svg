@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    /* A dark wedge is invisible against a dark browser tab, so it follows the
+       viewer's theme the way the rest of the interface does. */
+    .wedge { fill: #111111; stroke: #111111; }
+    @media (prefers-color-scheme: dark) {
+      .wedge { fill: #f2f2f0; stroke: #f2f2f0; }
+    }
+  </style>
+  <!-- Holes are cut out rather than painted, so they read as holes on either. -->
+  <mask id="holes">
+    <rect width="32" height="32" fill="#fff" />
+    <circle cx="21" cy="20" r="2.6" fill="#000" />
+    <circle cx="23.6" cy="15" r="1.5" fill="#000" />
+    <circle cx="14.8" cy="22.6" r="1.6" fill="#000" />
+  </mask>
+  <path
+    class="wedge"
+    d="M8 23 L24 12 L24 23 Z"
+    stroke-width="5"
+    stroke-linejoin="round"
+    mask="url(#holes)"
+  />
+</svg>
