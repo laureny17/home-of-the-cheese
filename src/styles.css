@@ -92,6 +92,10 @@ body {
   color: var(--ink-strong);
 }
 
+.name-short {
+  display: none;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -1026,30 +1030,120 @@ body {
     font-size: 32px;
   }
 
-  /* Tight enough that all three people stay on screen without scrolling. */
+  /*
+   * A receipt title is as long as the shop is called, and it was being held to
+   * one 24px line, so anything that wrapped sat on top of the row underneath.
+   * The line now wraps: name first, then date, total and payer beneath it.
+   */
+  .receipt-top {
+    align-items: flex-start;
+    min-height: 0;
+  }
+
+  /* The whole line opens the receipt, so the arrow is only spending width. */
+  .receipt-arrow {
+    display: none;
+  }
+
+  .receipt-summary {
+    height: auto;
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+
+  .receipt-title {
+    flex: 1 1 100%;
+    height: auto;
+  }
+
+  .receipt-figures,
+  .receipt-debts {
+    padding-left: 0;
+    font-size: 12px;
+    gap: 2px 12px;
+  }
+
+  .receipt-body {
+    padding-left: 0;
+  }
+
+  /* Item, cost and three initials fit a phone without sideways scrolling. */
   .ledger {
-    min-width: 380px;
+    min-width: 0;
     font-size: 14px;
   }
 
   .ledger .col-number {
-    width: 54px;
+    width: 52px;
   }
 
+  /* Wide enough that two totals underneath keep clear air between them. */
   .ledger .col-person {
-    width: 54px;
+    width: 46px;
+  }
+
+  .ledger .col-remove {
+    width: 18px;
   }
 
   .ledger th {
-    font-size: 10px;
+    font-size: 11px;
   }
 
-  .ledger tfoot .owes-amount {
-    font-size: 12px;
+  .name-full {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
   }
 
+  .name-short {
+    display: inline;
+  }
+
+  .ledger tfoot .owes-amount,
   .ledger tfoot .owes-total {
-    font-size: 12px;
+    font-size: 11px;
+  }
+
+  /* Stacked, because three labelled fields never fit side by side. */
+  .composer-fields {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .field-input {
+    width: 100%;
+  }
+
+  .scan-prompt {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .settle,
+  .split {
+    max-width: none;
+  }
+
+  .person-receipts {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .split-actions {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .modal {
+    max-height: 88vh;
+  }
+
+  .pagination {
+    gap: 10px;
   }
 }
 

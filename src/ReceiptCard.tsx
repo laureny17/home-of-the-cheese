@@ -76,7 +76,14 @@ export default function ReceiptCard({
         {editing && draft ? (
           <ReceiptHeader draft={draft} onChange={setDraft} />
         ) : (
-          <button type="button" className="receipt-summary" onClick={onToggle}>
+          <button
+            type="button"
+            className="receipt-summary"
+            // The arrow is hidden on a phone, so the line itself carries the
+            // state as well as the tap.
+            aria-expanded={expanded}
+            onClick={onToggle}
+          >
             <span className="receipt-title">{label}</span>
             <span className="receipt-meta">{formatDate(receipt.purchasedOn)}</span>
             <span className="receipt-total">{formatMoney(split.assignedTotal)}</span>

@@ -109,7 +109,12 @@ export default function ExpenseTable({
               </th>
               {PEOPLE.map((person) => (
                 <th scope="col" key={person} className="col-person">
-                  {person}
+                  {/* On a phone the column is an initial. The full name stays in
+                      the markup so the checkboxes keep their proper heading. */}
+                  <span className="name-full">{person}</span>
+                  <span className="name-short" aria-hidden="true">
+                    {person.slice(0, 1)}
+                  </span>
                 </th>
               ))}
               <th scope="col" className="col-remove">
