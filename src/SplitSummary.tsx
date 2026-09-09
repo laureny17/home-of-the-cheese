@@ -26,7 +26,7 @@ export default function SplitSummary({ split }: { split: Split }) {
   return (
     <section className="split" aria-labelledby="split-heading">
       <h2 className="split-heading" id="split-heading">
-        Who owes what
+        Per-person breakdown
       </h2>
 
       {split.people.map((entry) => {
@@ -93,11 +93,6 @@ export default function SplitSummary({ split }: { split: Split }) {
         );
       })}
 
-      <p className="split-footnote">
-        {formatMoney(split.assignedTotal)} split across {split.people.length} people.
-        {split.unassigned > 0 &&
-          ` ${formatMoney(split.unassigned)} is left out — nobody is checked off for it.`}
-      </p>
     </section>
   );
 }

@@ -316,20 +316,19 @@ body {
 }
 
 .split {
-  margin-top: 56px;
-  padding-top: 28px;
+  /* Held to a readable measure so an amount sits beside the item it belongs
+     to, rather than being flung to the far edge of a wide screen. */
+  max-width: 520px;
+  margin-top: 36px;
+  padding-top: 20px;
   border-top: 1px solid var(--rule);
-  /* Keeps the heading off the very top edge once it's scrolled to. */
-  scroll-margin-top: 24px;
 }
 
 .split-heading {
-  margin: 0;
+  margin: 0 0 4px;
   font-size: 13px;
   font-weight: 400;
   color: var(--muted);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
 /* Each person is a single line until opened, so they sit closer together. */
@@ -342,11 +341,11 @@ body {
 }
 
 .split-person-head {
-  padding: 10px 0;
+  padding: 8px 0;
 }
 
 .split-person.is-open .split-person-body {
-  padding-bottom: 14px;
+  padding-bottom: 12px;
 }
 
 .split-name {
@@ -369,13 +368,14 @@ body {
   list-style: none;
 }
 
+/* No rule between items: at one line each they read as a list already, and a
+   border on every row turned the breakdown into a grid of boxes. */
 .split-line {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 16px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--rule);
+  padding: 3px 0;
   font-size: 14px;
 }
 
@@ -391,7 +391,9 @@ body {
 }
 
 .split-tally {
-  margin: 10px 0 0;
+  margin: 8px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--rule);
 }
 
 .split-tally-row {
@@ -421,12 +423,6 @@ body {
   font-size: 16px;
   font-weight: 600;
   color: var(--ink-strong);
-}
-
-.split-footnote {
-  margin: 40px 0 0;
-  font-size: 13px;
-  color: var(--muted);
 }
 
 .store-status {
