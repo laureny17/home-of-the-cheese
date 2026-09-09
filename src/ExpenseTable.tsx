@@ -171,7 +171,7 @@ export default function ExpenseTable({
           <tfoot>
             <tr>
               <th scope="row" className="col-item owes-label">
-                Owes
+                Totals
               </th>
               <td className="col-number owes-total" colSpan={2}>
                 {formatMoney(grandTotal)}

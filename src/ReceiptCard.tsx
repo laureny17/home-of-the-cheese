@@ -58,17 +58,18 @@ export default function ReceiptCard({
           <button type="button" className="receipt-summary" onClick={onToggle}>
             <span className="receipt-title">{label}</span>
             <span className="receipt-meta">{formatDate(receipt.purchasedOn)}</span>
-            {owedTo ? (
-              <span className="badge">{owedTo} paid</span>
-            ) : (
-              <span className="badge badge-empty">No payer set</span>
-            )}
+            <span className="receipt-total">{formatMoney(split.assignedTotal)}</span>
           </button>
+        )}
+        {expanded && <span className="receipt-total">{formatMoney(split.assignedTotal)}</span>}
+        {owedTo ? (
+          <span className="badge">{owedTo} paid</span>
+        ) : (
+          <span className="badge badge-empty">No payer set</span>
         )}
       </div>
 
       <div className="receipt-figures">
-        <span className="receipt-total">{formatMoney(split.assignedTotal)}</span>
         {PEOPLE.map((person) => (
           <span key={person} className="receipt-share">
             {person} {formatMoney(shareOf(person))}
