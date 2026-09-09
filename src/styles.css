@@ -477,7 +477,6 @@ body {
   align-items: center;
   gap: 6px;
   height: 26px;
-  margin-left: auto;
   padding: 0 10px;
   border: 1px solid var(--rule);
   border-radius: 5px;
@@ -486,6 +485,18 @@ body {
   font-size: 13px;
   color: var(--muted);
   cursor: pointer;
+}
+
+/*
+ * Buttons are pushed right as a group. Giving each one margin-left: auto
+ * instead made every button claim a share of the free space, so two of them
+ * drifted apart and the first landed in the middle of the row.
+ */
+.row-end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
 }
 
 .action:hover {
@@ -940,8 +951,6 @@ body {
 }
 
 .scan-cta {
-  /* .action pushes itself right; in the prompt it leads. */
-  margin-left: 0;
   height: 32px;
   border-color: var(--ink-strong);
   background: var(--ink-strong);
@@ -1001,10 +1010,6 @@ body {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-}
-
-.confirm-actions .action {
-  margin-left: 0;
 }
 
 /* Responsive and preference overrides last, so they win over the rules above. */

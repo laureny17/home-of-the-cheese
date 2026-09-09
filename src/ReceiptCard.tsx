@@ -85,29 +85,31 @@ export default function ReceiptCard({
           </button>
         )}
 
-        {editing ? (
-          <>
+        <div className="row-end">
+          {editing ? (
+            <>
+              <button
+                type="button"
+                className="action danger"
+                onClick={() => setConfirmingDelete(true)}
+              >
+                delete
+              </button>
+              <button type="button" className="action save" onClick={saveDetails}>
+                Save changes
+              </button>
+            </>
+          ) : (
             <button
               type="button"
-              className="action danger"
-              onClick={() => setConfirmingDelete(true)}
+              className="action icon-action"
+              aria-label={`Edit details of ${label}`}
+              onClick={startEditing}
             >
-              delete
+              <PencilIcon />
             </button>
-            <button type="button" className="action save" onClick={saveDetails}>
-              Save changes
-            </button>
-          </>
-        ) : (
-          <button
-            type="button"
-            className="action icon-action"
-            aria-label={`Edit details of ${label}`}
-            onClick={startEditing}
-          >
-            <PencilIcon />
-          </button>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="receipt-figures">

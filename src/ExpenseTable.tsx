@@ -232,16 +232,18 @@ export default function ExpenseTable({
             </button>
           ))}
         </div>
-        {editing ? (
-          <button type="button" className="action save" onClick={() => setEditingItems(false)}>
-            Save changes
-          </button>
-        ) : (
-          <button type="button" className="action" onClick={() => setEditingItems(true)}>
-            <PencilIcon />
-            Edit items
-          </button>
-        )}
+        <div className="row-end">
+          {editing ? (
+            <button type="button" className="action save" onClick={() => setEditingItems(false)}>
+              Save changes
+            </button>
+          ) : (
+            <button type="button" className="action" onClick={() => setEditingItems(true)}>
+              <PencilIcon />
+              Edit items
+            </button>
+          )}
+        </div>
       </div>
       )}
       {openPerson && (

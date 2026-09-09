@@ -38,12 +38,14 @@ export default function NewReceipt({
         <h2 className="composer-heading" id="composer-heading">
           new receipt
         </h2>
-        <button type="button" className="action" onClick={onDiscard}>
-          discard
-        </button>
-        <button type="button" className="action save" onClick={onDone}>
-          done
-        </button>
+        <div className="row-end">
+          <button type="button" className="action" onClick={onDiscard}>
+            discard
+          </button>
+          <button type="button" className="action save" onClick={onDone}>
+            done
+          </button>
+        </div>
       </div>
 
       <div className="composer-fields">
