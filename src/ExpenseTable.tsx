@@ -11,13 +11,17 @@ import { computeTotals, formatMoney } from "./totals";
 export default function ExpenseTable({
   receiptId,
   store,
+  composing = false,
 }: {
   receiptId: string;
   store: ExpenseStore;
+  /** While a receipt is being written, everything is editable straight away. */
+  composing?: boolean;
 }) {
   const { updateExpense, toggleShare, addExpense, addScannedItems, removeExpense } = store;
   // Read-only until someone chooses to edit, so a stray tap can't move money.
-  const [editing, setEditing] = useState(false);
+  const [editingItems, setEditingItems] = useState(false);
+  const editing = composing || editingItems;
   const [openPerson, setOpenPerson] = useState<Person | null>(null);
   const expenses = expensesFor(store.expenses, receiptId);
   const { perPerson, grandTotal, unassigned } = computeTotals(expenses);
@@ -55,6 +59,19 @@ export default function ExpenseTable({
 
   return (
     <>
+      {composing && expenses.length === 0 && (
+        <div className="scan-prompt">
+          <button
+            type="button"
+            className={scanning ? "action scan-cta scanning" : "action scan-cta"}
+            onClick={() => fileInput.current?.click()}
+            disabled={scanning}
+          >
+            {scanning ? "reading receipt\u2026" : "scan a receipt"}
+          </button>
+          <span className="scan-prompt-note">or add the items by hand below</span>
+        </div>
+      )}
       <div className="ledger-scroll">
         <table className="ledger">
           <thead>
@@ -153,14 +170,16 @@ export default function ExpenseTable({
                   <button type="button" className="add-row" onClick={() => addExpense(receiptId)}>
                     + Add item
                   </button>
-                  <button
-                    type="button"
-                    className={scanning ? "add-row scanning" : "add-row"}
-                    onClick={() => fileInput.current?.click()}
-                    disabled={scanning}
-                  >
-                    {scanning ? "Reading receipt\u2026" : "Scan a receipt"}
-                  </button>
+                  {!(composing && expenses.length === 0) && (
+                    <button
+                      type="button"
+                      className={scanning ? "add-row scanning" : "add-row"}
+                      onClick={() => fileInput.current?.click()}
+                      disabled={scanning}
+                    >
+                      {scanning ? "Reading receipt\u2026" : "Scan a receipt"}
+                    </button>
+                  )}
                 </div>
               </td>
             </tr>
@@ -198,6 +217,7 @@ export default function ExpenseTable({
           {formatMoney(unassigned)} isn't checked off to anyone yet.
         </p>
       )}
+      {!composing && (
       <div className="split-actions">
         <div className="person-receipts">
           <span className="person-receipts-label">receipts:</span>
@@ -213,16 +233,17 @@ export default function ExpenseTable({
           ))}
         </div>
         {editing ? (
-          <button type="button" className="action save" onClick={() => setEditing(false)}>
+          <button type="button" className="action save" onClick={() => setEditingItems(false)}>
             Save changes
           </button>
         ) : (
-          <button type="button" className="action" onClick={() => setEditing(true)}>
+          <button type="button" className="action" onClick={() => setEditingItems(true)}>
             <PencilIcon />
             Edit items
           </button>
         )}
       </div>
+      )}
       {openPerson && (
         <Modal title={`${openPerson}'s share`} onClose={() => setOpenPerson(null)}>
           <PersonReceipt split={split} person={openPerson} />

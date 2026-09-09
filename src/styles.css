@@ -873,6 +873,101 @@ body {
   color: var(--ink);
 }
 
+.composer {
+  margin-top: 28px;
+}
+
+.composer-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.composer-heading {
+  margin: 0 auto 0 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink-strong);
+}
+
+.composer-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 20px 0 8px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.field-input {
+  height: 32px;
+  min-width: 170px;
+  padding: 0 8px;
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: var(--muted);
+}
+
+/* An empty receipt leads with the scanner: it is how most of them start. */
+.scan-prompt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 4px;
+  padding: 16px;
+  border: 1px dashed var(--rule);
+  border-radius: 6px;
+}
+
+.scan-cta {
+  /* .action pushes itself right; in the prompt it leads. */
+  margin-left: 0;
+  height: 32px;
+  border-color: var(--ink-strong);
+  background: var(--ink-strong);
+  color: var(--surface);
+}
+
+.scan-cta:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.scan-cta.scanning {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.scan-prompt-note {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.composer-total {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 /* Responsive and preference overrides last, so they win over the rules above. */
 @media (max-width: 600px) {
   :root {
