@@ -415,6 +415,16 @@ body {
   color: var(--muted);
 }
 
+.store-status {
+  margin: 32px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.store-error {
+  color: var(--ink);
+}
+
 /* Responsive and preference overrides last, so they win over the rules above. */
 @media (max-width: 600px) {
   :root {

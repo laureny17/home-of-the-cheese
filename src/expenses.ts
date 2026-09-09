@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { PEOPLE, type Person } from "./people";
+import { supabase, type ExpenseRow } from "./supabase";
 
 export type Expense = {
   id: string;
@@ -12,11 +13,23 @@ export type Expense = {
 
 export type ScannedItem = { name: string; cost: number; quantity: number };
 
-const STORAGE_KEY = "home-of-the-cheese.expenses";
-/** Remembered so a refresh doesn't hide the split button over rows still on screen. */
+/** Which column each person's checkbox lives in. */
+const COLUMN: Record<Person, "elephant" | "labubu" | "alpaca"> = {
+  Elephant: "elephant",
+  Labubu: "labubu",
+  Alpaca: "alpaca",
+};
+
+/**
+ * Whether a receipt has been scanned is a local view preference, not shared
+ * state, so it stays in this browser.
+ */
 const SCANNED_KEY = "home-of-the-cheese.scanned";
 
-const newId = () => Math.random().toString(36).slice(2, 10);
+/** Long enough that typing a cost isn't one write per keystroke. */
+const SAVE_DELAY_MS = 500;
+
+const newId = () => crypto.randomUUID();
 
 function noShares(): Record<Person, boolean> {
   const sharedBy = {} as Record<Person, boolean>;
@@ -30,33 +43,37 @@ export function blankExpense(): Expense {
 
 const isUntouched = (expense: Expense) => expense.name === "" && expense.cost === "";
 
-/** Trusts nothing from storage: a hand-edited or stale entry falls back to a blank row. */
-function reviveExpense(raw: unknown): Expense | null {
-  if (typeof raw !== "object" || raw === null) return null;
-  const value = raw as Record<string, unknown>;
-  const stored = (value.sharedBy ?? {}) as Record<string, unknown>;
+function toNumberOrNull(value: string): number | null {
+  const trimmed = value.trim();
+  if (trimmed === "") return null;
+  const parsed = Number.parseFloat(trimmed.replace(/[$,\s]/g, ""));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function fromRow(row: ExpenseRow): Expense {
   const sharedBy = {} as Record<Person, boolean>;
-  for (const person of PEOPLE) sharedBy[person] = stored[person] === true;
+  for (const person of PEOPLE) sharedBy[person] = row[COLUMN[person]] === true;
   return {
-    id: typeof value.id === "string" ? value.id : newId(),
-    name: typeof value.name === "string" ? value.name : "",
-    cost: typeof value.cost === "string" ? value.cost : "",
-    quantity: typeof value.quantity === "string" ? value.quantity : "1",
+    id: row.id,
+    name: row.name ?? "",
+    cost: row.cost === null ? "" : Number(row.cost).toFixed(2),
+    quantity: row.quantity === null ? "" : String(row.quantity),
     sharedBy,
   };
 }
 
-function loadExpenses(): Expense[] {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [blankExpense()];
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [blankExpense()];
-    const expenses = parsed.map(reviveExpense).filter((e): e is Expense => e !== null);
-    return expenses.length > 0 ? expenses : [blankExpense()];
-  } catch {
-    return [blankExpense()];
-  }
+function toRow(expense: Expense, sortOrder: number): ExpenseRow {
+  const quantity = toNumberOrNull(expense.quantity);
+  return {
+    id: expense.id,
+    name: expense.name,
+    cost: toNumberOrNull(expense.cost),
+    quantity: quantity === null ? null : Math.trunc(quantity),
+    elephant: expense.sharedBy.Elephant,
+    labubu: expense.sharedBy.Labubu,
+    alpaca: expense.sharedBy.Alpaca,
+    sort_order: sortOrder,
+  };
 }
 
 function loadScanned(): boolean {
@@ -68,68 +85,181 @@ function loadScanned(): boolean {
 }
 
 export function useExpenses() {
-  const [expenses, setExpenses] = useState<Expense[]>(loadExpenses);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [hasScanned, setHasScanned] = useState<boolean>(loadScanned);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  /** Mirrors `expenses` synchronously so handlers can read the current list. */
+  const latest = useRef<Expense[]>([]);
+  /** Sort order per row, so a reload keeps the order people see on screen. */
+  const order = useRef(new Map<string, number>());
+  const saveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+
+  const setAll = useCallback((next: Expense[]) => {
+    latest.current = next;
+    setExpenses(next);
+  }, []);
+
+  const saveRow = useCallback(async (expense: Expense) => {
+    const sortOrder = order.current.get(expense.id) ?? 0;
+    const { error: saveError } = await supabase
+      .from("expenses")
+      .upsert(toRow(expense, sortOrder));
+    if (saveError) setError("Couldn't save that change. It's still on screen but not stored.");
+    else setError(null);
+  }, []);
+
+  /** Collapses a burst of keystrokes on one row into a single write. */
+  const scheduleSave = useCallback(
+    (expense: Expense) => {
+      const timers = saveTimers.current;
+      const existing = timers.get(expense.id);
+      if (existing !== undefined) clearTimeout(existing);
+      timers.set(
+        expense.id,
+        setTimeout(() => {
+          timers.delete(expense.id);
+          void saveRow(expense);
+        }, SAVE_DELAY_MS),
+      );
+    },
+    [saveRow],
+  );
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(expenses));
-    } catch {
-      // Storage can be full or blocked; the table still works for this session.
+    let cancelled = false;
+
+    async function load() {
+      const { data, error: loadError } = await supabase
+        .from("expenses")
+        .select("*")
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true });
+      if (cancelled) return;
+
+      if (loadError) {
+        setError("Couldn't load the list. Check your connection and refresh.");
+        setAll([blankExpense()]);
+        setLoading(false);
+        return;
+      }
+
+      const rows = (data ?? []) as ExpenseRow[];
+      rows.forEach((row, index) => order.current.set(row.id, row.sort_order ?? index));
+      // A starter row is kept local until it has something in it, so opening
+      // the page doesn't leave an empty row for everyone else.
+      setAll(rows.length > 0 ? rows.map(fromRow) : [blankExpense()]);
+      setLoading(false);
     }
-  }, [expenses]);
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [setAll]);
+
+  const timers = saveTimers;
+  useEffect(() => {
+    const pending = timers.current;
+    return () => {
+      for (const timer of pending.values()) clearTimeout(timer);
+    };
+  }, [timers]);
 
   useEffect(() => {
     try {
       window.localStorage.setItem(SCANNED_KEY, String(hasScanned));
     } catch {
-      // Same as above: losing this only costs the button after a refresh.
+      // Losing this only costs the split button after a refresh.
     }
   }, [hasScanned]);
 
-  const updateExpense = (id: string, changes: Partial<Omit<Expense, "id" | "sharedBy">>) =>
-    setExpenses((current) =>
-      current.map((expense) => (expense.id === id ? { ...expense, ...changes } : expense)),
-    );
+  const nextSortOrder = () => {
+    const used = [...order.current.values()];
+    return used.length === 0 ? 0 : Math.max(...used) + 1;
+  };
 
-  const toggleShare = (id: string, person: Person) =>
-    setExpenses((current) =>
-      current.map((expense) =>
-        expense.id === id
-          ? { ...expense, sharedBy: { ...expense.sharedBy, [person]: !expense.sharedBy[person] } }
-          : expense,
-      ),
+  const updateExpense = (id: string, changes: Partial<Omit<Expense, "id" | "sharedBy">>) => {
+    const next = latest.current.map((expense) =>
+      expense.id === id ? { ...expense, ...changes } : expense,
     );
+    setAll(next);
+    const updated = next.find((expense) => expense.id === id);
+    if (updated) {
+      if (!order.current.has(id)) order.current.set(id, nextSortOrder());
+      scheduleSave(updated);
+    }
+  };
 
-  const addExpense = () => setExpenses((current) => [...current, blankExpense()]);
+  const toggleShare = (id: string, person: Person) => {
+    const next = latest.current.map((expense) =>
+      expense.id === id
+        ? { ...expense, sharedBy: { ...expense.sharedBy, [person]: !expense.sharedBy[person] } }
+        : expense,
+    );
+    setAll(next);
+    const updated = next.find((expense) => expense.id === id);
+    if (updated) {
+      if (!order.current.has(id)) order.current.set(id, nextSortOrder());
+      scheduleSave(updated);
+    }
+  };
+
+  /** Not written until it has content, so blank rows don't reach the house. */
+  const addExpense = () => setAll([...latest.current, blankExpense()]);
 
   /** Nobody is checked off on a scanned item; that's still the house's call. */
   const addScannedItems = (items: ScannedItem[]) => {
     if (items.length === 0) return;
     setHasScanned(true);
-    setExpenses((current) => {
-      const rows: Expense[] = items.map((item) => ({
-        id: newId(),
-        name: item.name,
-        cost: item.cost.toFixed(2),
-        quantity: String(item.quantity),
-        sharedBy: noShares(),
-      }));
-      // A single empty starter row is replaced rather than left above the scan.
-      const startsEmpty = current.length === 1 && isUntouched(current[0]);
-      return startsEmpty ? rows : [...current, ...rows];
-    });
+
+    let sortOrder = nextSortOrder();
+    const rows: Expense[] = items.map((item) => ({
+      id: newId(),
+      name: item.name,
+      cost: item.cost.toFixed(2),
+      quantity: String(item.quantity),
+      sharedBy: noShares(),
+    }));
+    for (const row of rows) order.current.set(row.id, sortOrder++);
+
+    const current = latest.current;
+    // A single empty starter row is replaced rather than left above the scan.
+    const startsEmpty = current.length === 1 && isUntouched(current[0]);
+    setAll(startsEmpty ? rows : [...current, ...rows]);
+
+    void (async () => {
+      const { error: insertError } = await supabase
+        .from("expenses")
+        .upsert(rows.map((row) => toRow(row, order.current.get(row.id) ?? 0)));
+      if (insertError) setError("The scan is on screen but couldn't be saved.");
+      else setError(null);
+    })();
   };
 
-  const removeExpense = (id: string) =>
-    setExpenses((current) => {
-      const remaining = current.filter((expense) => expense.id !== id);
-      return remaining.length > 0 ? remaining : [blankExpense()];
-    });
+  const removeExpense = (id: string) => {
+    const remaining = latest.current.filter((expense) => expense.id !== id);
+    setAll(remaining.length > 0 ? remaining : [blankExpense()]);
+
+    const pending = saveTimers.current.get(id);
+    if (pending !== undefined) {
+      clearTimeout(pending);
+      saveTimers.current.delete(id);
+    }
+    order.current.delete(id);
+
+    void (async () => {
+      const { error: deleteError } = await supabase.from("expenses").delete().eq("id", id);
+      if (deleteError) setError("Couldn't delete that row. Refresh to see what's stored.");
+    })();
+  };
 
   return {
     expenses,
     hasScanned,
+    loading,
+    error,
     updateExpense,
     toggleShare,
     addExpense,

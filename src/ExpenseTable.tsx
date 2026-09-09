@@ -10,6 +10,8 @@ export default function ExpenseTable() {
   const {
     expenses,
     hasScanned,
+    loading,
+    error: storeError,
     updateExpense,
     toggleShare,
     addExpense,
@@ -64,8 +66,13 @@ export default function ExpenseTable() {
     }
   }
 
+  if (loading) {
+    return <p className="store-status">Loading the list\u2026</p>;
+  }
+
   return (
     <>
+      {storeError && <p className="store-status store-error">{storeError}</p>}
       <div className="ledger-scroll">
         <table className="ledger">
           <thead>

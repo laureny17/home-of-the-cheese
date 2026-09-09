@@ -5,3 +5,9 @@ dist
 .vercel
 .env*
 tsconfig.tsbuildinfo
+supabase/.temp
+
+# Agent skills: skills-lock.json records which ones and at what hash;
+# the content itself is downloaded and doesn't belong in the repo.
+.agents/
+.claude/skills/
