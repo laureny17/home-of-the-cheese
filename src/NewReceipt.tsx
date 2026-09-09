@@ -86,7 +86,7 @@ export default function NewReceipt({
         </label>
       </div>
 
-      <ExpenseTable receiptId={receipt.id} store={store} composing />
+      <ExpenseTable receiptId={receipt.id} store={store} editing composing />
 
       <p className="composer-total">
         {items.length === 0

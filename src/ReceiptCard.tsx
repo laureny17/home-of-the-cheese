@@ -49,6 +49,7 @@ export default function ReceiptCard({
 
   function startEditing() {
     setDraft(receipt);
+    // Editing covers the items too, so they need to be on screen.
     if (!expanded) onToggle();
   }
 
@@ -149,7 +150,7 @@ export default function ReceiptCard({
 
       {expanded && (
         <div className="receipt-body">
-          <ExpenseTable receiptId={receipt.id} store={store} />
+          <ExpenseTable receiptId={receipt.id} store={store} editing={editing} />
         </div>
       )}
     </section>

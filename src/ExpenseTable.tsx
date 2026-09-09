@@ -5,23 +5,23 @@ import { scanReceipt } from "./scanReceipt";
 import { computeSplit } from "./split";
 import Modal from "./Modal";
 import PersonReceipt from "./PersonReceipt";
-import { PencilIcon } from "./icons";
 import { computeTotals, formatMoney } from "./totals";
 
 export default function ExpenseTable({
   receiptId,
   store,
+  editing,
   composing = false,
 }: {
   receiptId: string;
   store: ExpenseStore;
-  /** While a receipt is being written, everything is editable straight away. */
+  /** Owned by the receipt: one edit covers its description and its items. */
+  editing: boolean;
+  /** A receipt still being written leads with the scanner. */
   composing?: boolean;
 }) {
   const { updateExpense, toggleShare, addExpense, addScannedItems, removeExpense } = store;
-  // Read-only until someone chooses to edit, so a stray tap can't move money.
-  const [editingItems, setEditingItems] = useState(false);
-  const editing = composing || editingItems;
+
   const [openPerson, setOpenPerson] = useState<Person | null>(null);
   const expenses = expensesFor(store.expenses, receiptId);
   const { perPerson, grandTotal, unassigned } = computeTotals(expenses);
@@ -231,18 +231,6 @@ export default function ExpenseTable({
               {person}
             </button>
           ))}
-        </div>
-        <div className="row-end">
-          {editing ? (
-            <button type="button" className="action save" onClick={() => setEditingItems(false)}>
-              Save changes
-            </button>
-          ) : (
-            <button type="button" className="action" onClick={() => setEditingItems(true)}>
-              <PencilIcon />
-              Edit items
-            </button>
-          )}
         </div>
       </div>
       )}
