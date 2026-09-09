@@ -1,46 +1,48 @@
 import { PEOPLE, type Person } from "./people";
 import type { Receipt } from "./receipts";
 
-/** Name, date and who fronted the money for one receipt. */
+/**
+ * The editable form of the first line. Every control is sized to match the
+ * static text it replaces, so switching into editing doesn't move the line.
+ */
 export default function ReceiptHeader({
-  receipt,
+  draft,
   onChange,
 }: {
-  receipt: Receipt;
+  draft: Receipt;
   onChange: (receipt: Receipt) => void;
 }) {
   return (
-    <div className="receipt-header">
+    <>
       <input
         className="receipt-name"
-        value={receipt.name}
+        value={draft.name}
         placeholder="Untitled receipt"
         aria-label="Receipt name"
-        onChange={(event) => onChange({ ...receipt, name: event.target.value })}
+        onChange={(event) => onChange({ ...draft, name: event.target.value })}
       />
       <input
         type="date"
         className="receipt-date"
-        value={receipt.purchasedOn}
+        value={draft.purchasedOn}
         aria-label="Date"
-        onChange={(event) => onChange({ ...receipt, purchasedOn: event.target.value })}
+        onChange={(event) => onChange({ ...draft, purchasedOn: event.target.value })}
       />
-      <label className="receipt-payer">
-        <span className="visually-hidden">Who paid</span>
-        <select
-          value={receipt.payer ?? ""}
-          onChange={(event) =>
-            onChange({ ...receipt, payer: (event.target.value || null) as Person | null })
-          }
-        >
-          <option value="">Who paid?</option>
-          {PEOPLE.map((person) => (
-            <option key={person} value={person}>
-              {person} paid
-            </option>
-          ))}
-        </select>
-      </label>
-    </div>
+      <select
+        className="receipt-payer"
+        value={draft.payer ?? ""}
+        aria-label="Who paid"
+        onChange={(event) =>
+          onChange({ ...draft, payer: (event.target.value || null) as Person | null })
+        }
+      >
+        <option value="">Who paid?</option>
+        {PEOPLE.map((person) => (
+          <option key={person} value={person}>
+            {person} paid
+          </option>
+        ))}
+      </select>
+    </>
   );
 }

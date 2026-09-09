@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { PEOPLE, type Person } from "./people";
 import ExpenseTable from "./ExpenseTable";
 import ReceiptHeader from "./ReceiptHeader";
+import { PencilIcon } from "./icons";
 import { expensesFor, type ExpenseStore } from "./expenses";
 import type { Receipt } from "./receipts";
 import { computeSplit } from "./split";
@@ -37,6 +39,20 @@ export default function ReceiptCard({
     split.people.find((entry) => entry.person === person)?.total ?? 0;
   const label = receipt.name || "Untitled receipt";
 
+  // Held while editing so nothing is written until the change is saved.
+  const [draft, setDraft] = useState<Receipt | null>(null);
+  const editing = draft !== null;
+
+  function startEditing() {
+    setDraft(receipt);
+    if (!expanded) onToggle();
+  }
+
+  function saveDetails() {
+    if (draft) onChange(draft);
+    setDraft(null);
+  }
+
   return (
     <section className={expanded ? "receipt is-open" : "receipt"}>
       <div className="receipt-top">
@@ -47,25 +63,42 @@ export default function ReceiptCard({
           aria-label={expanded ? `Collapse ${label}` : `Expand ${label}`}
           onClick={onToggle}
         >
-          <span aria-hidden="true">{expanded ? "\u25be" : "\u25b8"}</span>
+          <span aria-hidden="true">{expanded ? "▾" : "▸"}</span>
         </button>
 
-        {/* Expanded, the same line becomes the place you edit these fields,
-            rather than repeating them in a second header below. */}
-        {expanded ? (
-          <ReceiptHeader receipt={receipt} onChange={onChange} />
+        {editing && draft ? (
+          <>
+            <ReceiptHeader draft={draft} onChange={setDraft} />
+            {/* Not editable, but kept on the line so all three states read
+                title, date, total. */}
+            <span className="receipt-total">{formatMoney(split.assignedTotal)}</span>
+          </>
         ) : (
           <button type="button" className="receipt-summary" onClick={onToggle}>
             <span className="receipt-title">{label}</span>
             <span className="receipt-meta">{formatDate(receipt.purchasedOn)}</span>
             <span className="receipt-total">{formatMoney(split.assignedTotal)}</span>
+            {owedTo ? (
+              <span className="badge">{owedTo} paid</span>
+            ) : (
+              <span className="badge badge-empty">No payer set</span>
+            )}
           </button>
         )}
-        {expanded && <span className="receipt-total">{formatMoney(split.assignedTotal)}</span>}
-        {owedTo ? (
-          <span className="badge">{owedTo} paid</span>
+
+        {editing ? (
+          <button type="button" className="action save" onClick={saveDetails}>
+            Save changes
+          </button>
         ) : (
-          <span className="badge badge-empty">No payer set</span>
+          <button
+            type="button"
+            className="action icon-action"
+            aria-label={`Edit details of ${label}`}
+            onClick={startEditing}
+          >
+            <PencilIcon />
+          </button>
         )}
       </div>
 

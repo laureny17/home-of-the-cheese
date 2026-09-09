@@ -1,4 +1,4 @@
-import { forwardRef, useState } from "react";
+import { useState } from "react";
 import { formatMoney } from "./totals";
 import type { Split, SplitLine } from "./split";
 
@@ -10,7 +10,7 @@ function lineNote(line: SplitLine): string {
   return parts.join(" · ");
 }
 
-const SplitSummary = forwardRef<HTMLElement, { split: Split }>(function SplitSummary({ split }, ref) {
+export default function SplitSummary({ split }: { split: Split }) {
   const showSubtotal = split.hasTax || split.hasTip;
   // Closed to begin with: the totals are the answer, the lines are the workings.
   const [openPeople, setOpenPeople] = useState<ReadonlySet<string>>(new Set<string>());
@@ -24,7 +24,7 @@ const SplitSummary = forwardRef<HTMLElement, { split: Split }>(function SplitSum
     });
 
   return (
-    <section className="split" ref={ref} aria-labelledby="split-heading">
+    <section className="split" aria-labelledby="split-heading">
       <h2 className="split-heading" id="split-heading">
         Who owes what
       </h2>
@@ -100,6 +100,4 @@ const SplitSummary = forwardRef<HTMLElement, { split: Split }>(function SplitSum
       </p>
     </section>
   );
-});
-
-export default SplitSummary;
+}

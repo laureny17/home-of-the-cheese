@@ -294,6 +294,7 @@ body {
 }
 
 .split-actions {
+  display: flex;
   margin-top: 28px;
 }
 
@@ -447,7 +448,9 @@ body {
 }
 
 .receipt-name {
-  flex: 1 1 auto;
+  /* Sized rather than greedy, so the date and payer stay roughly where their
+     static counterparts sit and editing doesn't rearrange the line. */
+  flex: 0 1 220px;
   min-width: 0;
   padding: 0;
   border: 0;
@@ -459,10 +462,7 @@ body {
   color: #c7c6c3;
 }
 
-.receipt-name:focus {
-  outline: none;
-  box-shadow: inset 0 -1px 0 var(--rule);
-}
+
 
 .receipt-date {
   padding: 0;
@@ -471,19 +471,81 @@ body {
   font-family: inherit;
 }
 
-.receipt-payer select {
-  padding: 3px 8px;
+.receipt-payer {
+  height: 24px;
+  padding: 0 6px;
   border: 1px solid var(--rule);
   border-radius: 999px;
   background: var(--surface);
-  font: inherit;
-  font-size: 13px;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
   color: var(--ink);
   cursor: pointer;
 }
 
-.receipt-payer select:hover {
+.receipt-payer:hover {
   background: var(--hover);
+}
+
+.receipt-name,
+.receipt-date {
+  box-shadow: inset 0 -1px 0 var(--rule);
+}
+
+/* Edit and save both sit at the right-hand end of the line. */
+.action {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  margin-left: auto;
+  padding: 0 10px;
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.action:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.icon-action {
+  width: 28px;
+  padding: 0;
+  justify-content: center;
+}
+
+.action.save {
+  border-color: var(--ink-strong);
+  background: var(--ink-strong);
+  color: var(--surface);
+}
+
+.action.save:hover {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+/* A read-only table shouldn't invite typing into it. */
+.cell-input[readonly] {
+  cursor: default;
+}
+
+.cell-input[readonly]:hover,
+.cell-input[readonly]:focus {
+  background: transparent;
+}
+
+.ledger input[type="checkbox"]:disabled {
+  cursor: default;
+  opacity: 1;
 }
 
 .receipt-list {
@@ -533,6 +595,8 @@ body {
   align-items: center;
   gap: 10px;
   flex: 1;
+  /* Keeps the badge beside the total rather than against the right edge. */
+  justify-content: flex-start;
   min-width: 0;
   height: 24px;
   padding: 0;
@@ -563,7 +627,6 @@ body {
 
 .badge {
   flex: none;
-  margin-left: auto;
   padding: 2px 9px;
   border-radius: 999px;
   background: var(--ink-strong);
