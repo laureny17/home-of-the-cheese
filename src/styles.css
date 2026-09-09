@@ -294,6 +294,7 @@ body {
 }
 
 .split-actions {
+  display: flex;
   margin-top: 28px;
 }
 
@@ -331,8 +332,21 @@ body {
   text-transform: uppercase;
 }
 
+/* Each person is a single line until opened, so they sit closer together. */
 .split-person {
-  margin-top: 32px;
+  border-top: 1px solid var(--rule);
+}
+
+.split-person:first-of-type {
+  border-top: 0;
+}
+
+.split-person-head {
+  padding: 10px 0;
+}
+
+.split-person.is-open .split-person-body {
+  padding-bottom: 14px;
 }
 
 .split-name {
@@ -423,6 +437,286 @@ body {
 
 .store-error {
   color: var(--ink);
+}
+
+.receipt-header {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.receipt-name {
+  /* Sized rather than greedy, so the date and payer stay roughly where their
+     static counterparts sit and editing doesn't rearrange the line. */
+  flex: 0 1 220px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+}
+
+.receipt-name::placeholder {
+  color: #c7c6c3;
+}
+
+
+
+.receipt-date {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+}
+
+.receipt-payer {
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.receipt-payer:hover {
+  background: var(--hover);
+}
+
+.receipt-name,
+.receipt-date {
+  box-shadow: inset 0 -1px 0 var(--rule);
+}
+
+/* Edit and save both sit at the right-hand end of the line. */
+.action {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  margin-left: auto;
+  padding: 0 10px;
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.action:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.icon-action {
+  width: 28px;
+  padding: 0;
+  justify-content: center;
+}
+
+.action.save {
+  border-color: var(--ink-strong);
+  background: var(--ink-strong);
+  color: var(--surface);
+}
+
+.action.save:hover {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+/* A read-only table shouldn't invite typing into it. */
+.cell-input[readonly] {
+  cursor: default;
+}
+
+.cell-input[readonly]:hover,
+.cell-input[readonly]:focus {
+  background: transparent;
+}
+
+.ledger input[type="checkbox"]:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.receipt-list {
+  margin-top: 32px;
+  border-top: 1px solid var(--rule);
+}
+
+.receipt {
+  padding: 14px 0 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
+/*
+ * Collapsed and expanded put different elements on this line -- spans one way,
+ * inputs the other. They are given the same height, size and spacing so the
+ * line doesn't shift or reflow when the arrow is pressed.
+ */
+.receipt-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+}
+
+.receipt-arrow {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--faint);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.receipt-arrow:hover {
+  color: var(--ink);
+}
+
+.receipt-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  /* Keeps the badge beside the total rather than against the right edge. */
+  justify-content: flex-start;
+  min-width: 0;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.receipt-title,
+.receipt-name {
+  height: 24px;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: -0.01em;
+  color: var(--ink-strong);
+}
+
+.receipt-meta,
+.receipt-date {
+  height: 24px;
+  font-size: 13px;
+  line-height: 24px;
+  color: var(--muted);
+}
+
+.badge {
+  flex: none;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--ink-strong);
+  color: var(--surface);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.badge-empty {
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--faint);
+}
+
+.receipt-figures,
+.receipt-debts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  padding-left: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.receipt-figures {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.receipt-total {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-strong);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.receipt-debts {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.receipt-debt strong {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.receipt-body {
+  padding-left: 22px;
+}
+
+.add-receipt {
+  margin-top: 12px;
+  font-size: 14px;
+}
+
+.split-person-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.split-person-head .split-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 24px;
+  color: var(--ink-strong);
+}
+
+/* The total is the answer, so it stays put whether or not the lines show. */
+.split-person-total {
+  margin-left: auto;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 24px;
+  color: var(--ink-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.split-person-body {
+  padding-left: 26px;
 }
 
 /* Responsive and preference overrides last, so they win over the rules above. */

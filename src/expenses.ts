@@ -4,6 +4,7 @@ import { supabase, type ExpenseRow } from "./supabase";
 
 export type Expense = {
   id: string;
+  receiptId: string;
   name: string;
   /** Kept as typed text so a half-written number like "3." survives a keystroke. */
   cost: string;
@@ -20,12 +21,6 @@ const COLUMN: Record<Person, "elephant" | "labubu" | "alpaca"> = {
   Alpaca: "alpaca",
 };
 
-/**
- * Whether a receipt has been scanned is a local view preference, not shared
- * state, so it stays in this browser.
- */
-const SCANNED_KEY = "home-of-the-cheese.scanned";
-
 /** Long enough that typing a cost isn't one write per keystroke. */
 const SAVE_DELAY_MS = 500;
 
@@ -37,11 +32,44 @@ function noShares(): Record<Person, boolean> {
   return sharedBy;
 }
 
-export function blankExpense(): Expense {
-  return { id: newId(), name: "", cost: "", quantity: "1", sharedBy: noShares() };
+export function blankExpense(receiptId: string): Expense {
+  return { id: newId(), receiptId, name: "", cost: "", quantity: "1", sharedBy: noShares() };
 }
 
 const isUntouched = (expense: Expense) => expense.name === "" && expense.cost === "";
+
+/** Above this, a line is left as one row rather than flooding the table. */
+const MAX_UNIT_ROWS = 20;
+
+/**
+ * A receipt line for three packs of dumplings becomes three rows, because the
+ * house may not split them the same way: one shared, two taken by one person.
+ * The cost from the parser is already per unit, so the money is unchanged.
+ */
+function unitRows(item: ScannedItem, receiptId: string): Expense[] {
+  const count = Math.trunc(item.quantity);
+  const asOneRow = !Number.isFinite(count) || count < 2 || count > MAX_UNIT_ROWS;
+  if (asOneRow) {
+    return [
+      {
+        id: newId(),
+        receiptId,
+        name: item.name,
+        cost: item.cost.toFixed(2),
+        quantity: String(item.quantity),
+        sharedBy: noShares(),
+      },
+    ];
+  }
+  return Array.from({ length: count }, () => ({
+    id: newId(),
+    receiptId,
+    name: item.name,
+    cost: item.cost.toFixed(2),
+    quantity: "1",
+    sharedBy: noShares(),
+  }));
+}
 
 function toNumberOrNull(value: string): number | null {
   const trimmed = value.trim();
@@ -55,6 +83,7 @@ function fromRow(row: ExpenseRow): Expense {
   for (const person of PEOPLE) sharedBy[person] = row[COLUMN[person]] === true;
   return {
     id: row.id,
+    receiptId: row.receipt_id,
     name: row.name ?? "",
     cost: row.cost === null ? "" : Number(row.cost).toFixed(2),
     quantity: row.quantity === null ? "" : String(row.quantity),
@@ -73,20 +102,18 @@ function toRow(expense: Expense, sortOrder: number): ExpenseRow {
     labubu: expense.sharedBy.Labubu,
     alpaca: expense.sharedBy.Alpaca,
     sort_order: sortOrder,
+    receipt_id: expense.receiptId,
   };
 }
 
-function loadScanned(): boolean {
-  try {
-    return window.localStorage.getItem(SCANNED_KEY) === "true";
-  } catch {
-    return false;
-  }
-}
-
-export function useExpenses() {
+/** Items belong to one receipt; pass null before a receipt has been chosen. */
+/**
+ * Every row the house has, kept in one place. The collapsed summary of a
+ * receipt has to stay in step with edits made inside it, which it cannot do if
+ * each receipt loads its own items separately.
+ */
+export function useExpenseStore() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [hasScanned, setHasScanned] = useState<boolean>(loadScanned);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,9 +130,7 @@ export function useExpenses() {
 
   const saveRow = useCallback(async (expense: Expense) => {
     const sortOrder = order.current.get(expense.id) ?? 0;
-    const { error: saveError } = await supabase
-      .from("expenses")
-      .upsert(toRow(expense, sortOrder));
+    const { error: saveError } = await supabase.from("expenses").upsert(toRow(expense, sortOrder));
     if (saveError) setError("Couldn't save that change. It's still on screen but not stored.");
     else setError(null);
   }, []);
@@ -139,17 +164,14 @@ export function useExpenses() {
       if (cancelled) return;
 
       if (loadError) {
-        setError("Couldn't load the list. Check your connection and refresh.");
-        setAll([blankExpense()]);
+        setError("Couldn't load the items. Check your connection and refresh.");
         setLoading(false);
         return;
       }
 
       const rows = (data ?? []) as ExpenseRow[];
       rows.forEach((row, index) => order.current.set(row.id, row.sort_order ?? index));
-      // A starter row is kept local until it has something in it, so opening
-      // the page doesn't leave an empty row for everyone else.
-      setAll(rows.length > 0 ? rows.map(fromRow) : [blankExpense()]);
+      setAll(rows.map(fromRow));
       setLoading(false);
     }
 
@@ -159,75 +181,63 @@ export function useExpenses() {
     };
   }, [setAll]);
 
-  const timers = saveTimers;
   useEffect(() => {
-    const pending = timers.current;
+    const pending = saveTimers.current;
     return () => {
       for (const timer of pending.values()) clearTimeout(timer);
     };
-  }, [timers]);
+  }, []);
 
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(SCANNED_KEY, String(hasScanned));
-    } catch {
-      // Losing this only costs the split button after a refresh.
-    }
-  }, [hasScanned]);
-
-  const nextSortOrder = () => {
-    const used = [...order.current.values()];
+  /** Sort order runs per receipt, so one receipt's rows keep their own order. */
+  const nextSortOrder = (receiptId: string) => {
+    const used = latest.current
+      .filter((expense) => expense.receiptId === receiptId)
+      .map((expense) => order.current.get(expense.id) ?? 0);
     return used.length === 0 ? 0 : Math.max(...used) + 1;
   };
 
-  const updateExpense = (id: string, changes: Partial<Omit<Expense, "id" | "sharedBy">>) => {
-    const next = latest.current.map((expense) =>
-      expense.id === id ? { ...expense, ...changes } : expense,
-    );
+  const commit = (next: Expense[], id: string) => {
     setAll(next);
     const updated = next.find((expense) => expense.id === id);
-    if (updated) {
-      if (!order.current.has(id)) order.current.set(id, nextSortOrder());
-      scheduleSave(updated);
-    }
+    if (!updated) return;
+    if (!order.current.has(id)) order.current.set(id, nextSortOrder(updated.receiptId));
+    scheduleSave(updated);
   };
 
-  const toggleShare = (id: string, person: Person) => {
-    const next = latest.current.map((expense) =>
-      expense.id === id
-        ? { ...expense, sharedBy: { ...expense.sharedBy, [person]: !expense.sharedBy[person] } }
-        : expense,
+  const updateExpense = (id: string, changes: Partial<Omit<Expense, "id" | "receiptId" | "sharedBy">>) =>
+    commit(
+      latest.current.map((expense) => (expense.id === id ? { ...expense, ...changes } : expense)),
+      id,
     );
-    setAll(next);
-    const updated = next.find((expense) => expense.id === id);
-    if (updated) {
-      if (!order.current.has(id)) order.current.set(id, nextSortOrder());
-      scheduleSave(updated);
-    }
-  };
+
+  const toggleShare = (id: string, person: Person) =>
+    commit(
+      latest.current.map((expense) =>
+        expense.id === id
+          ? { ...expense, sharedBy: { ...expense.sharedBy, [person]: !expense.sharedBy[person] } }
+          : expense,
+      ),
+      id,
+    );
 
   /** Not written until it has content, so blank rows don't reach the house. */
-  const addExpense = () => setAll([...latest.current, blankExpense()]);
+  const addExpense = (receiptId: string) =>
+    setAll([...latest.current, blankExpense(receiptId)]);
 
   /** Nobody is checked off on a scanned item; that's still the house's call. */
-  const addScannedItems = (items: ScannedItem[]) => {
+  const addScannedItems = (receiptId: string, items: ScannedItem[]) => {
     if (items.length === 0) return;
-    setHasScanned(true);
 
-    let sortOrder = nextSortOrder();
-    const rows: Expense[] = items.map((item) => ({
-      id: newId(),
-      name: item.name,
-      cost: item.cost.toFixed(2),
-      quantity: String(item.quantity),
-      sharedBy: noShares(),
-    }));
+    let sortOrder = nextSortOrder(receiptId);
+    const rows = items.flatMap((item) => unitRows(item, receiptId));
     for (const row of rows) order.current.set(row.id, sortOrder++);
 
     const current = latest.current;
     // A single empty starter row is replaced rather than left above the scan.
-    const startsEmpty = current.length === 1 && isUntouched(current[0]);
-    setAll(startsEmpty ? rows : [...current, ...rows]);
+    const own = current.filter((expense) => expense.receiptId === receiptId);
+    const startsEmpty = own.length === 1 && isUntouched(own[0]);
+    const kept = startsEmpty ? current.filter((expense) => expense.id !== own[0].id) : current;
+    setAll([...kept, ...rows]);
 
     void (async () => {
       const { error: insertError } = await supabase
@@ -239,8 +249,7 @@ export function useExpenses() {
   };
 
   const removeExpense = (id: string) => {
-    const remaining = latest.current.filter((expense) => expense.id !== id);
-    setAll(remaining.length > 0 ? remaining : [blankExpense()]);
+    setAll(latest.current.filter((expense) => expense.id !== id));
 
     const pending = saveTimers.current.get(id);
     if (pending !== undefined) {
@@ -257,7 +266,6 @@ export function useExpenses() {
 
   return {
     expenses,
-    hasScanned,
     loading,
     error,
     updateExpense,
@@ -266,4 +274,11 @@ export function useExpenses() {
     addScannedItems,
     removeExpense,
   };
+}
+
+export type ExpenseStore = ReturnType<typeof useExpenseStore>;
+
+/** The rows on one receipt, in the order they were added. */
+export function expensesFor(expenses: Expense[], receiptId: string): Expense[] {
+  return expenses.filter((expense) => expense.receiptId === receiptId);
 }

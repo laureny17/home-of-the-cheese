@@ -1,45 +1,30 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { PEOPLE } from "./people";
-import { useExpenses } from "./expenses";
+import { expensesFor, type ExpenseStore } from "./expenses";
 import { scanReceipt } from "./scanReceipt";
 import { computeSplit } from "./split";
 import SplitSummary from "./SplitSummary";
+import { PencilIcon } from "./icons";
 import { computeTotals, formatMoney } from "./totals";
 
-export default function ExpenseTable() {
-  const {
-    expenses,
-    hasScanned,
-    loading,
-    error: storeError,
-    updateExpense,
-    toggleShare,
-    addExpense,
-    addScannedItems,
-    removeExpense,
-  } = useExpenses();
+export default function ExpenseTable({
+  receiptId,
+  store,
+}: {
+  receiptId: string;
+  store: ExpenseStore;
+}) {
+  const { updateExpense, toggleShare, addExpense, addScannedItems, removeExpense } = store;
+  // Read-only until someone chooses to edit, so a stray tap can't move money.
+  const [editing, setEditing] = useState(false);
+  const expenses = expensesFor(store.expenses, receiptId);
   const { perPerson, grandTotal, unassigned } = computeTotals(expenses);
+  const split = computeSplit(expenses);
 
   const fileInput = useRef<HTMLInputElement>(null);
   const [scanning, setScanning] = useState(false);
   const [scanNote, setScanNote] = useState<string | null>(null);
 
-  const splitSection = useRef<HTMLElement>(null);
-  // A counter rather than a flag, so pressing the button again scrolls again.
-  const [splitRequests, setSplitRequests] = useState(0);
-  const showSplit = splitRequests > 0;
-
-  // Runs after the summary is in the DOM, which is what makes it scrollable to.
-  useEffect(() => {
-    if (splitRequests === 0) return;
-    const smooth =
-      typeof window.matchMedia !== "function" ||
-      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    splitSection.current?.scrollIntoView({
-      behavior: smooth ? "smooth" : "auto",
-      block: "start",
-    });
-  }, [splitRequests]);
 
   async function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -54,7 +39,7 @@ export default function ExpenseTable() {
       if (items.length === 0) {
         setScanNote("No items found on that photo. Try a clearer shot of the receipt.");
       } else {
-        addScannedItems(items);
+        addScannedItems(receiptId, items);
         setScanNote(
           `Added ${items.length} item${items.length === 1 ? "" : "s"}. Check the costs, then tick who's in.`,
         );
@@ -66,13 +51,8 @@ export default function ExpenseTable() {
     }
   }
 
-  if (loading) {
-    return <p className="store-status">Loading the list\u2026</p>;
-  }
-
   return (
     <>
-      {storeError && <p className="store-status store-error">{storeError}</p>}
       <div className="ledger-scroll">
         <table className="ledger">
           <thead>
@@ -102,6 +82,7 @@ export default function ExpenseTable() {
                 <td className="col-item">
                   <input
                     className="cell-input"
+                    readOnly={!editing}
                     value={expense.name}
                     placeholder="Untitled"
                     aria-label="Item"
@@ -113,6 +94,7 @@ export default function ExpenseTable() {
                 <td className="col-number">
                   <input
                     className="cell-input align-right"
+                    readOnly={!editing}
                     value={expense.cost}
                     placeholder="0.00"
                     inputMode="decimal"
@@ -125,6 +107,7 @@ export default function ExpenseTable() {
                 <td className="col-number">
                   <input
                     className="cell-input align-right"
+                    readOnly={!editing}
                     value={expense.quantity}
                     placeholder="1"
                     inputMode="numeric"
@@ -140,6 +123,7 @@ export default function ExpenseTable() {
                   <td key={person} className="col-person">
                     <input
                       type="checkbox"
+                      disabled={!editing}
                       checked={expense.sharedBy[person]}
                       aria-label={`${person} shares ${expense.name || "untitled item"}`}
                       onChange={() => toggleShare(expense.id, person)}
@@ -147,21 +131,24 @@ export default function ExpenseTable() {
                   </td>
                 ))}
                 <td className="col-remove">
-                  <button
-                    type="button"
-                    className="remove"
-                    aria-label={`Remove ${expense.name || "untitled item"}`}
-                    onClick={() => removeExpense(expense.id)}
-                  >
-                    ×
-                  </button>
+                  {editing && (
+                    <button
+                      type="button"
+                      className="remove"
+                      aria-label={`Remove ${expense.name || "untitled item"}`}
+                      onClick={() => removeExpense(expense.id)}
+                    >
+                      ×
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
+            {editing && (
             <tr className="add-row-line">
               <td colSpan={4 + PEOPLE.length}>
                 <div className="row-actions">
-                  <button type="button" className="add-row" onClick={addExpense}>
+                  <button type="button" className="add-row" onClick={() => addExpense(receiptId)}>
                     + Add item
                   </button>
                   <button
@@ -175,11 +162,12 @@ export default function ExpenseTable() {
                 </div>
               </td>
             </tr>
+            )}
           </tbody>
           <tfoot>
             <tr>
               <th scope="row" className="col-item owes-label">
-                Owes
+                Totals
               </th>
               <td className="col-number owes-total" colSpan={2}>
                 {formatMoney(grandTotal)}
@@ -208,18 +196,21 @@ export default function ExpenseTable() {
           {formatMoney(unassigned)} isn't checked off to anyone yet.
         </p>
       )}
-      {hasScanned && (
-        <div className="split-actions">
-          <button
-            type="button"
-            className="generate-split"
-            onClick={() => setSplitRequests((count) => count + 1)}
-          >
-            Generate split
+      <div className="split-actions">
+        {editing ? (
+          <button type="button" className="action save" onClick={() => setEditing(false)}>
+            Save changes
           </button>
-        </div>
-      )}
-      {showSplit && <SplitSummary ref={splitSection} split={computeSplit(expenses)} />}
+        ) : (
+          <button type="button" className="action" onClick={() => setEditing(true)}>
+            <PencilIcon />
+            Edit items
+          </button>
+        )}
+      </div>
+      {/* Once a receipt has anything on it the split is always worth showing,
+          so it is no longer behind a button. */}
+      {expenses.length > 0 && <SplitSummary split={split} />}
     </>
   );
 }

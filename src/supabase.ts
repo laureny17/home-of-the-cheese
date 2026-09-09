@@ -25,4 +25,5 @@ export type ExpenseRow = {
   labubu: boolean;
   alpaca: boolean;
   sort_order: number;
+  receipt_id: string;
 };
