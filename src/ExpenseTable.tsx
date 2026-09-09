@@ -1,23 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { PEOPLE } from "./people";
-import { useExpenses } from "./expenses";
+import { expensesFor, type ExpenseStore } from "./expenses";
 import { scanReceipt } from "./scanReceipt";
 import { computeSplit } from "./split";
 import SplitSummary from "./SplitSummary";
 import { computeTotals, formatMoney } from "./totals";
 
-export default function ExpenseTable({ receiptId }: { receiptId: string }) {
-  const {
-    expenses,
-    hasScanned,
-    loading,
-    error: storeError,
-    updateExpense,
-    toggleShare,
-    addExpense,
-    addScannedItems,
-    removeExpense,
-  } = useExpenses(receiptId);
+export default function ExpenseTable({
+  receiptId,
+  store,
+}: {
+  receiptId: string;
+  store: ExpenseStore;
+}) {
+  const { updateExpense, toggleShare, addExpense, addScannedItems, removeExpense } = store;
+  const expenses = expensesFor(store.expenses, receiptId);
   const { perPerson, grandTotal, unassigned } = computeTotals(expenses);
 
   const fileInput = useRef<HTMLInputElement>(null);
@@ -54,7 +51,7 @@ export default function ExpenseTable({ receiptId }: { receiptId: string }) {
       if (items.length === 0) {
         setScanNote("No items found on that photo. Try a clearer shot of the receipt.");
       } else {
-        addScannedItems(items);
+        addScannedItems(receiptId, items);
         setScanNote(
           `Added ${items.length} item${items.length === 1 ? "" : "s"}. Check the costs, then tick who's in.`,
         );
@@ -66,13 +63,8 @@ export default function ExpenseTable({ receiptId }: { receiptId: string }) {
     }
   }
 
-  if (loading) {
-    return <p className="store-status">Loading the list\u2026</p>;
-  }
-
   return (
     <>
-      {storeError && <p className="store-status store-error">{storeError}</p>}
       <div className="ledger-scroll">
         <table className="ledger">
           <thead>
@@ -161,7 +153,7 @@ export default function ExpenseTable({ receiptId }: { receiptId: string }) {
             <tr className="add-row-line">
               <td colSpan={4 + PEOPLE.length}>
                 <div className="row-actions">
-                  <button type="button" className="add-row" onClick={addExpense}>
+                  <button type="button" className="add-row" onClick={() => addExpense(receiptId)}>
                     + Add item
                   </button>
                   <button
@@ -208,7 +200,7 @@ export default function ExpenseTable({ receiptId }: { receiptId: string }) {
           {formatMoney(unassigned)} isn't checked off to anyone yet.
         </p>
       )}
-      {hasScanned && (
+      {(
         <div className="split-actions">
           <button
             type="button"

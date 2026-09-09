@@ -426,11 +426,12 @@ body {
 }
 
 .receipt-header {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 16px;
-  margin-top: 24px;
 }
 
 .receipt-name {
@@ -477,6 +478,121 @@ body {
 
 .receipt-payer select:hover {
   background: var(--hover);
+}
+
+.receipt-list {
+  margin-top: 32px;
+  border-top: 1px solid var(--rule);
+}
+
+.receipt {
+  padding: 14px 0 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.receipt-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.receipt-arrow {
+  flex: none;
+  width: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.receipt-arrow:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+
+.receipt-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.receipt-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--ink-strong);
+}
+
+.receipt-meta {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.badge {
+  margin-left: auto;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--ink-strong);
+  color: var(--surface);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.badge-empty {
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--faint);
+}
+
+.receipt-figures,
+.receipt-debts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  padding-left: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.receipt-figures {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.receipt-total {
+  font-weight: 500;
+  color: var(--ink-strong);
+}
+
+.receipt-debts {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.receipt-debt strong {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.receipt-body {
+  padding-left: 22px;
+}
+
+.add-receipt {
+  margin-top: 12px;
+  font-size: 14px;
 }
 
 /* Responsive and preference overrides last, so they win over the rules above. */

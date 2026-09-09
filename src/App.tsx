@@ -1,21 +1,30 @@
-import { useEffect, useRef } from "react";
-import ExpenseTable from "./ExpenseTable";
-import ReceiptHeader from "./ReceiptHeader";
+import { useState } from "react";
+import ReceiptCard from "./ReceiptCard";
+import { useExpenseStore } from "./expenses";
 import { newReceipt, useReceipts } from "./receipts";
 
 export default function App() {
-  const { receipts, loading, error, saveReceipt } = useReceipts();
+  const receiptStore = useReceipts();
+  const store = useExpenseStore();
+  const [openIds, setOpenIds] = useState<ReadonlySet<string>>(new Set<string>());
 
-  // Until the receipt list lands, the page edits the most recent receipt, and
-  // makes one the first time the house opens the app.
-  const creating = useRef(false);
-  useEffect(() => {
-    if (loading || error || receipts.length > 0 || creating.current) return;
-    creating.current = true;
-    void saveReceipt(newReceipt());
-  }, [loading, error, receipts.length, saveReceipt]);
+  const loading = receiptStore.loading || store.loading;
+  const error = receiptStore.error ?? store.error;
 
-  const current = receipts[0];
+  const toggle = (id: string) =>
+    setOpenIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  async function addReceipt() {
+    const receipt = newReceipt();
+    await receiptStore.saveReceipt(receipt);
+    // A new receipt has nothing in it, so open it ready to be filled in.
+    setOpenIds((current) => new Set(current).add(receipt.id));
+  }
 
   return (
     <div className="app">
@@ -26,10 +35,27 @@ export default function App() {
         <h1 className="page-title">Expenses</h1>
         {error && <p className="store-status store-error">{error}</p>}
         {loading && <p className="store-status">Loading…</p>}
-        {current && (
+
+        {!loading && (
           <>
-            <ReceiptHeader receipt={current} onChange={saveReceipt} />
-            <ExpenseTable receiptId={current.id} />
+            <div className="receipt-list">
+              {receiptStore.receipts.map((receipt) => (
+                <ReceiptCard
+                  key={receipt.id}
+                  receipt={receipt}
+                  store={store}
+                  expanded={openIds.has(receipt.id)}
+                  onToggle={() => toggle(receipt.id)}
+                  onChange={receiptStore.saveReceipt}
+                />
+              ))}
+            </div>
+            {receiptStore.receipts.length === 0 && (
+              <p className="store-status">No receipts yet. Add one to get started.</p>
+            )}
+            <button type="button" className="add-row add-receipt" onClick={() => void addReceipt()}>
+              + New receipt
+            </button>
           </>
         )}
       </main>
