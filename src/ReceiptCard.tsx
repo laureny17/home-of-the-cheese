@@ -9,15 +9,15 @@ import type { Receipt } from "./receipts";
 import { computeSplit } from "./split";
 import { formatMoney } from "./totals";
 
-/** "2026-09-09" → "9 Sep 2026", without dragging in a date library. */
+/**
+ * "2026-09-09" becomes "09/09/26". Built from the stored parts rather than a
+ * locale, which would reorder the day and month depending on where the browser
+ * thinks it is.
+ */
 export function formatDate(iso: string): string {
-  const [year, month, day] = iso.split("-").map(Number);
+  const [year, month, day] = iso.split("-");
   if (!year || !month || !day) return iso;
-  return new Date(year, month - 1, day).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return `${month.padStart(2, "0")}/${day.padStart(2, "0")}/${year.slice(-2)}`;
 }
 
 export default function ReceiptCard({
