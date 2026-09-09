@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ReceiptCard from "./ReceiptCard";
+import SettleSummary from "./SettleSummary";
 import { useExpenseStore } from "./expenses";
 import { newReceipt, useReceipts } from "./receipts";
 
@@ -38,6 +39,11 @@ export default function App() {
 
         {!loading && (
           <>
+            <SettleSummary
+              receipts={receiptStore.receipts}
+              expenses={store.expenses}
+              settled={receiptStore.settled}
+            />
             <div className="receipt-list">
               {receiptStore.receipts.map((receipt) => (
                 <ReceiptCard

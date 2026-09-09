@@ -715,6 +715,72 @@ body {
   padding-left: 26px;
 }
 
+.settle {
+  max-width: 520px;
+  margin-top: 32px;
+  padding: 16px 18px 18px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+
+.settle-heading {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--ink-strong);
+}
+
+.settle-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.settle-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 3px 0;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.settle-line strong {
+  font-weight: 500;
+}
+
+.settle-amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.settle-clear {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* The unnetted view, for when someone wants to see where a figure came from. */
+.settle-detail {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+
+.settle-detail .settle-line {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.settle-subheading {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
 /* Responsive and preference overrides last, so they win over the rules above. */
 @media (max-width: 600px) {
   :root {
