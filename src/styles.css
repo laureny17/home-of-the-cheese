@@ -425,6 +425,60 @@ body {
   color: var(--ink);
 }
 
+.receipt-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.receipt-name {
+  flex: 1 1 240px;
+  min-width: 0;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--ink-strong);
+}
+
+.receipt-name::placeholder {
+  color: #c7c6c3;
+}
+
+.receipt-name:focus {
+  outline: none;
+  box-shadow: inset 0 -1px 0 var(--rule);
+}
+
+.receipt-date {
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.receipt-payer select {
+  padding: 3px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.receipt-payer select:hover {
+  background: var(--hover);
+}
+
 /* Responsive and preference overrides last, so they win over the rules above. */
 @media (max-width: 600px) {
   :root {

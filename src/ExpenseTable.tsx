@@ -6,7 +6,7 @@ import { computeSplit } from "./split";
 import SplitSummary from "./SplitSummary";
 import { computeTotals, formatMoney } from "./totals";
 
-export default function ExpenseTable() {
+export default function ExpenseTable({ receiptId }: { receiptId: string }) {
   const {
     expenses,
     hasScanned,
@@ -17,7 +17,7 @@ export default function ExpenseTable() {
     addExpense,
     addScannedItems,
     removeExpense,
-  } = useExpenses();
+  } = useExpenses(receiptId);
   const { perPerson, grandTotal, unassigned } = computeTotals(expenses);
 
   const fileInput = useRef<HTMLInputElement>(null);

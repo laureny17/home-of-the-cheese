@@ -62,7 +62,7 @@ function fromRow(row: ExpenseRow): Expense {
   };
 }
 
-function toRow(expense: Expense, sortOrder: number): ExpenseRow {
+function toRow(expense: Expense, sortOrder: number, receiptId: string): ExpenseRow {
   const quantity = toNumberOrNull(expense.quantity);
   return {
     id: expense.id,
@@ -73,6 +73,7 @@ function toRow(expense: Expense, sortOrder: number): ExpenseRow {
     labubu: expense.sharedBy.Labubu,
     alpaca: expense.sharedBy.Alpaca,
     sort_order: sortOrder,
+    receipt_id: receiptId,
   };
 }
 
@@ -84,7 +85,8 @@ function loadScanned(): boolean {
   }
 }
 
-export function useExpenses() {
+/** Items belong to one receipt; pass null before a receipt has been chosen. */
+export function useExpenses(receiptId: string | null) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [hasScanned, setHasScanned] = useState<boolean>(loadScanned);
   const [loading, setLoading] = useState(true);
@@ -102,13 +104,14 @@ export function useExpenses() {
   }, []);
 
   const saveRow = useCallback(async (expense: Expense) => {
+    if (receiptId === null) return;
     const sortOrder = order.current.get(expense.id) ?? 0;
     const { error: saveError } = await supabase
       .from("expenses")
-      .upsert(toRow(expense, sortOrder));
+      .upsert(toRow(expense, sortOrder, receiptId));
     if (saveError) setError("Couldn't save that change. It's still on screen but not stored.");
     else setError(null);
-  }, []);
+  }, [receiptId]);
 
   /** Collapses a burst of keystrokes on one row into a single write. */
   const scheduleSave = useCallback(
@@ -131,9 +134,15 @@ export function useExpenses() {
     let cancelled = false;
 
     async function load() {
+      if (receiptId === null) {
+        setAll([]);
+        setLoading(false);
+        return;
+      }
       const { data, error: loadError } = await supabase
         .from("expenses")
         .select("*")
+        .eq("receipt_id", receiptId)
         .order("sort_order", { ascending: true })
         .order("created_at", { ascending: true });
       if (cancelled) return;
@@ -153,11 +162,12 @@ export function useExpenses() {
       setLoading(false);
     }
 
+    setLoading(true);
     void load();
     return () => {
       cancelled = true;
     };
-  }, [setAll]);
+  }, [setAll, receiptId]);
 
   const timers = saveTimers;
   useEffect(() => {
@@ -230,9 +240,10 @@ export function useExpenses() {
     setAll(startsEmpty ? rows : [...current, ...rows]);
 
     void (async () => {
+      if (receiptId === null) return;
       const { error: insertError } = await supabase
         .from("expenses")
-        .upsert(rows.map((row) => toRow(row, order.current.get(row.id) ?? 0)));
+        .upsert(rows.map((row) => toRow(row, order.current.get(row.id) ?? 0, receiptId)));
       if (insertError) setError("The scan is on screen but couldn't be saved.");
       else setError(null);
     })();
