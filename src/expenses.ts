@@ -36,7 +36,11 @@ export function blankExpense(receiptId: string): Expense {
   return { id: newId(), receiptId, name: "", cost: "", quantity: "1", sharedBy: noShares() };
 }
 
-const isUntouched = (expense: Expense) => expense.name === "" && expense.cost === "";
+/** A row nobody has put anything in: worth keeping while typing, not after. */
+export const isBlankRow = (expense: Expense) =>
+  expense.name.trim() === "" && expense.cost.trim() === "";
+
+const isUntouched = isBlankRow;
 
 /** Above this, a line is left as one row rather than flooding the table. */
 const MAX_UNIT_ROWS = 20;
@@ -221,8 +225,35 @@ export function useExpenseStore() {
     );
 
   /** Not written until it has content, so blank rows don't reach the house. */
-  const addExpense = (receiptId: string) =>
-    setAll([...latest.current, blankExpense(receiptId)]);
+  const addExpense = (receiptId: string): string => {
+    const row = blankExpense(receiptId);
+    setAll([...latest.current, row]);
+    return row.id;
+  };
+
+  /** Called when editing ends: rows nobody filled in are not worth keeping. */
+  const discardBlankRows = (receiptId: string) => {
+    const blanks = latest.current.filter(
+      (expense) => expense.receiptId === receiptId && isBlankRow(expense),
+    );
+    if (blanks.length === 0) return;
+
+    const ids = new Set(blanks.map((expense) => expense.id));
+    setAll(latest.current.filter((expense) => !ids.has(expense.id)));
+
+    for (const id of ids) {
+      const pending = saveTimers.current.get(id);
+      if (pending !== undefined) clearTimeout(pending);
+      saveTimers.current.delete(id);
+      order.current.delete(id);
+    }
+
+    // Most were never written; deleting those is a harmless no-op.
+    void supabase
+      .from("expenses")
+      .delete()
+      .in("id", [...ids]);
+  };
 
   /** Nobody is checked off on a scanned item; that's still the house's call. */
   const addScannedItems = (receiptId: string, items: ScannedItem[]) => {
@@ -273,6 +304,7 @@ export function useExpenseStore() {
     addExpense,
     addScannedItems,
     removeExpense,
+    discardBlankRows,
   };
 }
 

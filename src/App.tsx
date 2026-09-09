@@ -1,12 +1,24 @@
 import { useState } from "react";
 import ReceiptCard from "./ReceiptCard";
+import SettleSummary from "./SettleSummary";
+import Pagination from "./Pagination";
+import NewReceipt from "./NewReceipt";
 import { useExpenseStore } from "./expenses";
 import { newReceipt, useReceipts } from "./receipts";
+
+const PER_PAGE = 10;
 
 export default function App() {
   const receiptStore = useReceipts();
   const store = useExpenseStore();
   const [openIds, setOpenIds] = useState<ReadonlySet<string>>(new Set<string>());
+  const [page, setPage] = useState(1);
+
+  const { receipts } = receiptStore;
+  // Receipts are already newest first, so a page is just a slice.
+  const pageCount = Math.max(1, Math.ceil(receipts.length / PER_PAGE));
+  const current = Math.min(page, pageCount);
+  const shown = receipts.slice((current - 1) * PER_PAGE, current * PER_PAGE);
 
   const loading = receiptStore.loading || store.loading;
   const error = receiptStore.error ?? store.error;
@@ -19,11 +31,20 @@ export default function App() {
       return next;
     });
 
+  // The row exists from the start so scanned items have something to attach to.
+  const [composingId, setComposingId] = useState<string | null>(null);
+  const composing = receipts.find((receipt) => receipt.id === composingId) ?? null;
+
   async function addReceipt() {
     const receipt = newReceipt();
+    setPage(1);
     await receiptStore.saveReceipt(receipt);
-    // A new receipt has nothing in it, so open it ready to be filled in.
-    setOpenIds((current) => new Set(current).add(receipt.id));
+    setComposingId(receipt.id);
+  }
+
+  async function discardReceipt(id: string) {
+    setComposingId(null);
+    await receiptStore.removeReceipt(id);
   }
 
   return (
@@ -36,10 +57,25 @@ export default function App() {
         {error && <p className="store-status store-error">{error}</p>}
         {loading && <p className="store-status">Loading…</p>}
 
-        {!loading && (
+        {!loading && composing && (
+          <NewReceipt
+            receipt={composing}
+            store={store}
+            onChange={receiptStore.saveReceipt}
+            onDone={() => setComposingId(null)}
+            onDiscard={() => void discardReceipt(composing.id)}
+          />
+        )}
+
+        {!loading && !composing && (
           <>
+            <SettleSummary
+              receipts={receipts}
+              expenses={store.expenses}
+              settled={receiptStore.settled}
+            />
             <div className="receipt-list">
-              {receiptStore.receipts.map((receipt) => (
+              {shown.map((receipt) => (
                 <ReceiptCard
                   key={receipt.id}
                   receipt={receipt}
@@ -47,15 +83,17 @@ export default function App() {
                   expanded={openIds.has(receipt.id)}
                   onToggle={() => toggle(receipt.id)}
                   onChange={receiptStore.saveReceipt}
+                  onDelete={() => void receiptStore.removeReceipt(receipt.id)}
                 />
               ))}
             </div>
-            {receiptStore.receipts.length === 0 && (
+            {receipts.length === 0 && (
               <p className="store-status">No receipts yet. Add one to get started.</p>
             )}
             <button type="button" className="add-row add-receipt" onClick={() => void addReceipt()}>
               + New receipt
             </button>
+            <Pagination page={current} pageCount={pageCount} onChange={setPage} />
           </>
         )}
       </main>
