@@ -1051,6 +1051,54 @@ body {
   gap: 8px;
 }
 
+.settle-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.confirm-list {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: 5px;
+  background: var(--hover);
+}
+
+.settle-box {
+  width: 14px;
+  height: 14px;
+  margin: 0 2px 0 0;
+  accent-color: var(--ink-strong);
+  cursor: pointer;
+  vertical-align: -2px;
+}
+
+.settle-box:disabled {
+  cursor: default;
+}
+
+/* A settled debt stays on the receipt as a record, but stops being a claim. */
+.receipt-debt.is-settled {
+  color: var(--faint);
+  text-decoration: line-through;
+  text-decoration-color: var(--rule);
+}
+
+.receipt-debt.is-settled strong {
+  color: var(--faint);
+  font-weight: 400;
+}
+
+.settled-note {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--hover);
+  color: var(--muted);
+  font-size: 11px;
+  text-decoration: none;
+}
+
 /* Responsive and preference overrides last, so they win over the rules above. */
 @media (max-width: 600px) {
   :root {

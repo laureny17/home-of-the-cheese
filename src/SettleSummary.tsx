@@ -3,7 +3,7 @@ import { PEOPLE, type Person } from "./people";
 import Modal from "./Modal";
 import { InfoIcon } from "./icons";
 import type { Debt } from "./settle";
-import { pairwiseDebts, settleUp } from "./settle";
+import { outstandingDebts, pairwiseDebts, settleUp } from "./settle";
 import type { Expense } from "./expenses";
 import type { Receipt, SettledSet } from "./receipts";
 import { formatMoney } from "./totals";
@@ -55,14 +55,20 @@ export default function SettleSummary({
   receipts,
   expenses,
   settled,
+  onSettleAll,
 }: {
   receipts: Receipt[];
   expenses: Expense[];
   settled: SettledSet;
+  onSettleAll: (pairs: { receiptId: string; debtor: Person }[]) => void;
 }) {
   const owed = pairwiseDebts(receipts, expenses, settled);
   const transfers = settleUp(owed);
+  const outstanding = outstandingDebts(receipts, expenses, settled);
   const [showDetail, setShowDetail] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+
+  const receiptCount = new Set(outstanding.map((debt) => debt.receiptId)).size;
 
   return (
     <section className="settle" aria-labelledby="settle-heading">
@@ -88,6 +94,44 @@ export default function SettleSummary({
             <DebtLine key={`${debt.from}-${debt.to}`} debt={debt} />
           ))}
         </ul>
+      )}
+
+      {transfers.length > 0 && (
+        <div className="settle-actions">
+          <button type="button" className="action save" onClick={() => setConfirming(true)}>
+            we've settled up
+          </button>
+        </div>
+      )}
+
+      {confirming && (
+        <Modal title="everyone has paid up?" onClose={() => setConfirming(false)}>
+          <p className="confirm-text">
+            this marks {receiptCount} receipt{receiptCount === 1 ? "" : "s"} as settled and clears
+            the list. only say yes once all {transfers.length} payment
+            {transfers.length === 1 ? " has" : "s have"} actually been made. this can't be undone.
+          </p>
+          <ul className="settle-list confirm-list">
+            {transfers.map((debt) => (
+              <DebtLine key={`${debt.from}-${debt.to}`} debt={debt} />
+            ))}
+          </ul>
+          <div className="confirm-actions">
+            <button type="button" className="action" onClick={() => setConfirming(false)}>
+              not yet
+            </button>
+            <button
+              type="button"
+              className="action save"
+              onClick={() => {
+                onSettleAll(outstanding.map((debt) => ({ receiptId: debt.receiptId, debtor: debt.debtor })));
+                setConfirming(false);
+              }}
+            >
+              yes, settled
+            </button>
+          </div>
+        </Modal>
       )}
 
       {showDetail && (

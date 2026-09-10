@@ -87,3 +87,37 @@ export function settleUp(debts: Debt[]): Debt[] {
 
   return transfers;
 }
+
+export type OutstandingDebt = { receiptId: string; debtor: Person; owedTo: Person; amount: number };
+
+/**
+ * Every receipt-and-person still owing something, which is what a settle-up
+ * clears. Netting rearranges who pays whom, so a transfer cannot be traced
+ * back to receipts on its own -- confirming the whole plan settles all of it.
+ */
+export function outstandingDebts(
+  receipts: Receipt[],
+  expenses: Expense[],
+  settled: SettledSet,
+): OutstandingDebt[] {
+  const rows: OutstandingDebt[] = [];
+
+  for (const receipt of receipts) {
+    const payer = receipt.payer;
+    if (payer === null) continue;
+
+    const split = computeSplit(expensesFor(expenses, receipt.id));
+    for (const entry of split.people) {
+      if (entry.person === payer || entry.total <= CENT) continue;
+      if (settled.has(settledKey(receipt.id, entry.person))) continue;
+      rows.push({
+        receiptId: receipt.id,
+        debtor: entry.person,
+        owedTo: payer,
+        amount: entry.total,
+      });
+    }
+  }
+
+  return rows;
+}

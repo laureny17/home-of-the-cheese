@@ -73,6 +73,7 @@ export default function App() {
               receipts={receipts}
               expenses={store.expenses}
               settled={receiptStore.settled}
+              onSettleAll={(pairs) => void receiptStore.markManySettled(pairs)}
             />
             <div className="receipt-list">
               {shown.map((receipt) => (
@@ -84,6 +85,8 @@ export default function App() {
                   onToggle={() => toggle(receipt.id)}
                   onChange={receiptStore.saveReceipt}
                   onDelete={() => void receiptStore.removeReceipt(receipt.id)}
+                  settled={receiptStore.settled}
+                  onSettle={(debtor) => void receiptStore.markSettled(receipt.id, debtor)}
                 />
               ))}
             </div>
