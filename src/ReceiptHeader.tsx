@@ -1,4 +1,5 @@
 import { PEOPLE, type Person } from "./people";
+import DateField from "./DateField";
 import type { Receipt } from "./receipts";
 
 /**
@@ -22,14 +23,9 @@ export default function ReceiptHeader({
         onChange={(event) => onChange({ ...draft, name: event.target.value })}
       />
       <div className="receipt-meta-fields">
-        <input
-          type="date"
-          className="receipt-date"
+        <DateField
           value={draft.purchasedOn}
-          aria-label="Date"
-          onChange={(event) =>
-            onChange({ ...draft, purchasedOn: event.target.value })
-          }
+          onChange={(purchasedOn) => onChange({ ...draft, purchasedOn })}
         />
         <select
           className="receipt-payer"

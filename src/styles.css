@@ -479,6 +479,8 @@ body {
 
 
 .receipt-date {
+  width: 76px;
+  flex: none;
   padding: 0;
   border: 0;
   background: transparent;
@@ -1115,11 +1117,13 @@ body {
     margin-left: 0;
   }
 
-  .receipt-date {
-    flex: 1 1 auto;
-    min-width: 0;
+  /* Both sized to their contents and sitting together on the left, rather
+     than the date stretching and pushing the payer to the far edge. */
+  .receipt-meta-fields {
+    justify-content: flex-start;
   }
 
+  .receipt-date,
   .receipt-payer {
     flex: none;
   }

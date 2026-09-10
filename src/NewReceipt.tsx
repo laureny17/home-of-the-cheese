@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { PEOPLE, type Person } from "./people";
+import DateField from "./DateField";
 import ExpenseTable from "./ExpenseTable";
 import { expensesFor, type ExpenseStore } from "./expenses";
 import type { Receipt } from "./receipts";
@@ -67,11 +68,10 @@ export default function NewReceipt({
         </label>
         <label className="field">
           <span className="field-label">when</span>
-          <input
-            type="date"
+          <DateField
             className="field-input"
             value={draft.purchasedOn}
-            onChange={(event) => update({ ...draft, purchasedOn: event.target.value })}
+            onChange={(purchasedOn) => update({ ...draft, purchasedOn })}
           />
         </label>
         <label className="field">
