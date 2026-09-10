@@ -121,3 +121,25 @@ export function outstandingDebts(
 
   return rows;
 }
+
+/**
+ * A receipt is done with when everyone who owed something on it has paid.
+ * One with no payer, or nothing owed, is never "settled" -- there was nothing
+ * to settle -- so it stays in the list.
+ */
+export function isReceiptSettled(
+  receipt: Receipt,
+  expenses: Expense[],
+  settled: SettledSet,
+): boolean {
+  const payer = receipt.payer;
+  if (payer === null) return false;
+
+  const split = computeSplit(expensesFor(expenses, receipt.id));
+  const debtors = split.people.filter(
+    (entry) => entry.person !== payer && entry.total > CENT,
+  );
+  if (debtors.length === 0) return false;
+
+  return debtors.every((entry) => settled.has(settledKey(receipt.id, entry.person)));
+}

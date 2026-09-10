@@ -105,7 +105,7 @@ export default function ReceiptCard({
             <>
               <button
                 type="button"
-                className="action danger"
+                className="action danger icon-only"
                 aria-label={`Delete ${label}`}
                 onClick={() => setConfirmingDelete(true)}
               >
@@ -116,7 +116,7 @@ export default function ReceiptCard({
               </button>
               <button
                 type="button"
-                className="action save"
+                className="action save icon-only"
                 aria-label="Save changes"
                 onClick={saveDetails}
               >

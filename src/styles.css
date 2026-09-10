@@ -1099,6 +1099,11 @@ body {
   text-decoration: none;
 }
 
+.settled-toggle {
+  margin-top: 2px;
+  font-size: 13px;
+}
+
 /* Responsive and preference overrides last, so they win over the rules above. */
 @media (max-width: 600px) {
   :root {
@@ -1176,7 +1181,7 @@ body {
     flex: none;
   }
 
-  .action-label {
+  .icon-only .action-label {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -1184,18 +1189,26 @@ body {
     clip-path: inset(50%);
   }
 
-  .action-icon {
+  .icon-only .action-icon {
     display: inline-flex;
   }
 
-  .action {
+  .action.icon-only,
+  .icon-action {
     width: 32px;
     padding: 0;
     justify-content: center;
   }
 
-  .icon-action {
-    width: 32px;
+  /* Settling up is the one thing on the page worth a full-width button. */
+  .settle-actions .action {
+    width: 100%;
+    height: 34px;
+    justify-content: center;
+  }
+
+  .composer-top .action {
+    height: 30px;
   }
 
   .receipt-summary {

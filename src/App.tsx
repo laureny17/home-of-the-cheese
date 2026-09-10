@@ -5,6 +5,7 @@ import Pagination from "./Pagination";
 import NewReceipt from "./NewReceipt";
 import { useExpenseStore } from "./expenses";
 import { newReceipt, useReceipts } from "./receipts";
+import { isReceiptSettled } from "./settle";
 
 const PER_PAGE = 10;
 
@@ -15,10 +16,22 @@ export default function App() {
   const [page, setPage] = useState(1);
 
   const { receipts } = receiptStore;
+  const [showSettled, setShowSettled] = useState(false);
+
+  // Squared-up receipts are kept, not deleted, but they are no longer the
+  // business of the page, so they step out of the list until asked for.
+  const settledReceipts = receipts.filter((receipt) =>
+    isReceiptSettled(receipt, store.expenses, receiptStore.settled),
+  );
+  const settledIds = new Set(settledReceipts.map((receipt) => receipt.id));
+  const listed = showSettled
+    ? receipts
+    : receipts.filter((receipt) => !settledIds.has(receipt.id));
+
   // Receipts are already newest first, so a page is just a slice.
-  const pageCount = Math.max(1, Math.ceil(receipts.length / PER_PAGE));
+  const pageCount = Math.max(1, Math.ceil(listed.length / PER_PAGE));
   const current = Math.min(page, pageCount);
-  const shown = receipts.slice((current - 1) * PER_PAGE, current * PER_PAGE);
+  const shown = listed.slice((current - 1) * PER_PAGE, current * PER_PAGE);
 
   const loading = receiptStore.loading || store.loading;
   const error = receiptStore.error ?? store.error;
@@ -90,8 +103,27 @@ export default function App() {
                 />
               ))}
             </div>
-            {receipts.length === 0 && (
-              <p className="store-status">No receipts yet. Add one to get started.</p>
+            {listed.length === 0 && (
+              <p className="store-status">
+                {settledReceipts.length > 0
+                  ? "everything is settled up."
+                  : "no receipts yet. add one to get started."}
+              </p>
+            )}
+
+            {settledReceipts.length > 0 && (
+              <button
+                type="button"
+                className="add-row settled-toggle"
+                onClick={() => {
+                  setShowSettled((shown) => !shown);
+                  setPage(1);
+                }}
+              >
+                {showSettled
+                  ? `hide ${settledReceipts.length} settled`
+                  : `show ${settledReceipts.length} settled`}
+              </button>
             )}
             <button type="button" className="add-row add-receipt" onClick={() => void addReceipt()}>
               + New receipt
