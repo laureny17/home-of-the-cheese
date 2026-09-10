@@ -13,3 +13,46 @@ export function PencilIcon() {
     </svg>
   );
 }
+
+/** Grey circled i, for opening the unnetted detail. */
+export function InfoIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+      <circle cx="8" cy="8" r="6.6" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      <circle cx="8" cy="4.9" r="0.85" fill="currentColor" />
+      <path d="M8 7.1v4.4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Bin, for discarding a receipt. */
+export function TrashIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+      <path
+        d="M3.4 4.6h9.2M6.4 4.6V3.3h3.2v1.3M4.6 4.6l.6 8h5.6l.6-8M6.7 6.9v3.6M9.3 6.9v3.6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Tick, for committing an edit. */
+export function CheckIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" focusable="false">
+      <path
+        d="M3.4 8.4l3 3 6.2-6.8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

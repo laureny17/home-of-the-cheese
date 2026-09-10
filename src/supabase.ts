@@ -20,7 +20,6 @@ export type ExpenseRow = {
   id: string;
   name: string;
   cost: number | null;
-  quantity: number | null;
   elephant: boolean;
   labubu: boolean;
   alpaca: boolean;

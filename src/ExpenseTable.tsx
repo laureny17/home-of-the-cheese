@@ -1,23 +1,54 @@
-import { useRef, useState } from "react";
-import { PEOPLE } from "./people";
-import { expensesFor, type ExpenseStore } from "./expenses";
+import { useEffect, useRef, useState } from "react";
+import { PEOPLE, type Person } from "./people";
+import { expensesFor, isBlankRow, type Expense, type ExpenseStore } from "./expenses";
 import { scanReceipt } from "./scanReceipt";
 import { computeSplit } from "./split";
-import SplitSummary from "./SplitSummary";
-import { PencilIcon } from "./icons";
+import Modal from "./Modal";
+import PersonReceipt from "./PersonReceipt";
 import { computeTotals, formatMoney } from "./totals";
 
 export default function ExpenseTable({
   receiptId,
   store,
+  editing,
+  composing = false,
 }: {
   receiptId: string;
   store: ExpenseStore;
+  /** Owned by the receipt: one edit covers its description and its items. */
+  editing: boolean;
+  /** A receipt still being written leads with the scanner. */
+  composing?: boolean;
 }) {
   const { updateExpense, toggleShare, addExpense, addScannedItems, removeExpense } = store;
-  // Read-only until someone chooses to edit, so a stray tap can't move money.
-  const [editing, setEditing] = useState(false);
+
   const expenses = expensesFor(store.expenses, receiptId);
+
+  const [openPerson, setOpenPerson] = useState<Person | null>(null);
+  /** The row whose name field should take focus once React has drawn it. */
+  const [focusRow, setFocusRow] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (focusRow === null) return;
+    const input = document.querySelector<HTMLInputElement>(`[data-row="${focusRow}"] input`);
+    input?.focus();
+    setFocusRow(null);
+  }, [focusRow, expenses.length]);
+
+  /**
+   * Enter carries on to a fresh row, the way a list wants to be typed. On a row
+   * nobody has filled in there is nothing to carry on from, so it just leaves
+   * the field rather than stacking up another empty one.
+   */
+  function handleRowKey(event: React.KeyboardEvent<HTMLInputElement>, expense: Expense) {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    if (isBlankRow(expense)) {
+      event.currentTarget.blur();
+      return;
+    }
+    setFocusRow(addExpense(receiptId));
+  }
   const { perPerson, grandTotal, unassigned } = computeTotals(expenses);
   const split = computeSplit(expenses);
 
@@ -53,6 +84,19 @@ export default function ExpenseTable({
 
   return (
     <>
+      {composing && expenses.length === 0 && (
+        <div className="scan-prompt">
+          <button
+            type="button"
+            className={scanning ? "action scan-cta scanning" : "action scan-cta"}
+            onClick={() => fileInput.current?.click()}
+            disabled={scanning}
+          >
+            {scanning ? "reading receipt\u2026" : "scan a receipt"}
+          </button>
+          <span className="scan-prompt-note">or add the items by hand below</span>
+        </div>
+      )}
       <div className="ledger-scroll">
         <table className="ledger">
           <thead>
@@ -63,12 +107,14 @@ export default function ExpenseTable({
               <th scope="col" className="col-number">
                 Cost
               </th>
-              <th scope="col" className="col-number">
-                Qty
-              </th>
               {PEOPLE.map((person) => (
                 <th scope="col" key={person} className="col-person">
-                  {person}
+                  {/* On a phone the column is an initial. The full name stays in
+                      the markup so the checkboxes keep their proper heading. */}
+                  <span className="name-full">{person}</span>
+                  <span className="name-short" aria-hidden="true">
+                    {person.slice(0, 1)}
+                  </span>
                 </th>
               ))}
               <th scope="col" className="col-remove">
@@ -78,18 +124,30 @@ export default function ExpenseTable({
           </thead>
           <tbody>
             {expenses.map((expense) => (
-              <tr key={expense.id}>
+              <tr key={expense.id} data-row={expense.id}>
                 <td className="col-item">
-                  <input
-                    className="cell-input"
-                    readOnly={!editing}
-                    value={expense.name}
-                    placeholder="Untitled"
-                    aria-label="Item"
-                    onChange={(event) =>
-                      updateExpense(expense.id, { name: event.target.value })
-                    }
-                  />
+                  {editing ? (
+                    <input
+                      className="cell-input"
+                      value={expense.name}
+                      placeholder="Untitled"
+                      aria-label="Item"
+                      onChange={(event) =>
+                        updateExpense(expense.id, { name: event.target.value })
+                      }
+                      onKeyDown={(event) => handleRowKey(event, expense)}
+                    />
+                  ) : (
+                    /* Plain text rather than a locked input, so a name too long
+                       for a phone can be swiped along to read the rest. */
+                    <div className="cell-text">
+                      {expense.name === "" ? (
+                        <span className="cell-empty">untitled</span>
+                      ) : (
+                        expense.name
+                      )}
+                    </div>
+                  )}
                 </td>
                 <td className="col-number">
                   <input
@@ -102,21 +160,7 @@ export default function ExpenseTable({
                     onChange={(event) =>
                       updateExpense(expense.id, { cost: event.target.value })
                     }
-                  />
-                </td>
-                <td className="col-number">
-                  <input
-                    className="cell-input align-right"
-                    readOnly={!editing}
-                    value={expense.quantity}
-                    placeholder="1"
-                    inputMode="numeric"
-                    aria-label={`Quantity of ${expense.name || "untitled item"}`}
-                    onChange={(event) =>
-                      updateExpense(expense.id, {
-                        quantity: event.target.value,
-                      })
-                    }
+                    onKeyDown={(event) => handleRowKey(event, expense)}
                   />
                 </td>
                 {PEOPLE.map((person) => (
@@ -146,19 +190,21 @@ export default function ExpenseTable({
             ))}
             {editing && (
             <tr className="add-row-line">
-              <td colSpan={4 + PEOPLE.length}>
+              <td colSpan={3 + PEOPLE.length}>
                 <div className="row-actions">
                   <button type="button" className="add-row" onClick={() => addExpense(receiptId)}>
                     + Add item
                   </button>
-                  <button
-                    type="button"
-                    className={scanning ? "add-row scanning" : "add-row"}
-                    onClick={() => fileInput.current?.click()}
-                    disabled={scanning}
-                  >
-                    {scanning ? "Reading receipt\u2026" : "Scan a receipt"}
-                  </button>
+                  {composing && expenses.length > 0 && (
+                    <button
+                      type="button"
+                      className={scanning ? "add-row scanning" : "add-row"}
+                      onClick={() => fileInput.current?.click()}
+                      disabled={scanning}
+                    >
+                      {scanning ? "Reading receipt\u2026" : "Scan a receipt"}
+                    </button>
+                  )}
                 </div>
               </td>
             </tr>
@@ -169,7 +215,7 @@ export default function ExpenseTable({
               <th scope="row" className="col-item owes-label">
                 Totals
               </th>
-              <td className="col-number owes-total" colSpan={2}>
+              <td className="col-number owes-total">
                 {formatMoney(grandTotal)}
               </td>
               {PEOPLE.map((person) => (
@@ -196,21 +242,28 @@ export default function ExpenseTable({
           {formatMoney(unassigned)} isn't checked off to anyone yet.
         </p>
       )}
+      {!composing && (
       <div className="split-actions">
-        {editing ? (
-          <button type="button" className="action save" onClick={() => setEditing(false)}>
-            Save changes
-          </button>
-        ) : (
-          <button type="button" className="action" onClick={() => setEditing(true)}>
-            <PencilIcon />
-            Edit items
-          </button>
-        )}
+        <div className="person-receipts">
+          <span className="person-receipts-label">receipts:</span>
+          {PEOPLE.map((person) => (
+            <button
+              key={person}
+              type="button"
+              className="person-chip"
+              onClick={() => setOpenPerson(person)}
+            >
+              {person}
+            </button>
+          ))}
+        </div>
       </div>
-      {/* Once a receipt has anything on it the split is always worth showing,
-          so it is no longer behind a button. */}
-      {expenses.length > 0 && <SplitSummary split={split} />}
+      )}
+      {openPerson && (
+        <Modal title={`${openPerson}'s share`} onClose={() => setOpenPerson(null)}>
+          <PersonReceipt split={split} person={openPerson} />
+        </Modal>
+      )}
     </>
   );
 }

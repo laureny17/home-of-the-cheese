@@ -8,7 +8,6 @@ export type Expense = {
   name: string;
   /** Kept as typed text so a half-written number like "3." survives a keystroke. */
   cost: string;
-  quantity: string;
   sharedBy: Record<Person, boolean>;
 };
 
@@ -33,42 +32,39 @@ function noShares(): Record<Person, boolean> {
 }
 
 export function blankExpense(receiptId: string): Expense {
-  return { id: newId(), receiptId, name: "", cost: "", quantity: "1", sharedBy: noShares() };
+  return { id: newId(), receiptId, name: "", cost: "", sharedBy: noShares() };
 }
 
-const isUntouched = (expense: Expense) => expense.name === "" && expense.cost === "";
+/** A row nobody has put anything in: worth keeping while typing, not after. */
+export const isBlankRow = (expense: Expense) =>
+  expense.name.trim() === "" && expense.cost.trim() === "";
 
-/** Above this, a line is left as one row rather than flooding the table. */
+const isUntouched = isBlankRow;
+
+/** Above this, one row carries the line rather than flooding the table. */
 const MAX_UNIT_ROWS = 20;
 
 /**
  * A receipt line for three packs of dumplings becomes three rows, because the
  * house may not split them the same way: one shared, two taken by one person.
- * The cost from the parser is already per unit, so the money is unchanged.
+ * The parser reports a per-unit cost, so the money is unchanged.
+ *
+ * An implausible count would bury the table, so it collapses to a single row
+ * carrying the whole line's cost -- fewer rows, same money.
  */
 function unitRows(item: ScannedItem, receiptId: string): Expense[] {
-  const count = Math.trunc(item.quantity);
-  const asOneRow = !Number.isFinite(count) || count < 2 || count > MAX_UNIT_ROWS;
-  if (asOneRow) {
-    return [
-      {
-        id: newId(),
-        receiptId,
-        name: item.name,
-        cost: item.cost.toFixed(2),
-        quantity: String(item.quantity),
-        sharedBy: noShares(),
-      },
-    ];
-  }
-  return Array.from({ length: count }, () => ({
+  const row = (cost: number): Expense => ({
     id: newId(),
     receiptId,
     name: item.name,
-    cost: item.cost.toFixed(2),
-    quantity: "1",
+    cost: cost.toFixed(2),
     sharedBy: noShares(),
-  }));
+  });
+
+  const count = Math.trunc(item.quantity);
+  if (!Number.isFinite(count) || count < 2) return [row(item.cost)];
+  if (count > MAX_UNIT_ROWS) return [row(item.cost * count)];
+  return Array.from({ length: count }, () => row(item.cost));
 }
 
 function toNumberOrNull(value: string): number | null {
@@ -86,18 +82,15 @@ function fromRow(row: ExpenseRow): Expense {
     receiptId: row.receipt_id,
     name: row.name ?? "",
     cost: row.cost === null ? "" : Number(row.cost).toFixed(2),
-    quantity: row.quantity === null ? "" : String(row.quantity),
     sharedBy,
   };
 }
 
 function toRow(expense: Expense, sortOrder: number): ExpenseRow {
-  const quantity = toNumberOrNull(expense.quantity);
   return {
     id: expense.id,
     name: expense.name,
     cost: toNumberOrNull(expense.cost),
-    quantity: quantity === null ? null : Math.trunc(quantity),
     elephant: expense.sharedBy.Elephant,
     labubu: expense.sharedBy.Labubu,
     alpaca: expense.sharedBy.Alpaca,
@@ -221,8 +214,35 @@ export function useExpenseStore() {
     );
 
   /** Not written until it has content, so blank rows don't reach the house. */
-  const addExpense = (receiptId: string) =>
-    setAll([...latest.current, blankExpense(receiptId)]);
+  const addExpense = (receiptId: string): string => {
+    const row = blankExpense(receiptId);
+    setAll([...latest.current, row]);
+    return row.id;
+  };
+
+  /** Called when editing ends: rows nobody filled in are not worth keeping. */
+  const discardBlankRows = (receiptId: string) => {
+    const blanks = latest.current.filter(
+      (expense) => expense.receiptId === receiptId && isBlankRow(expense),
+    );
+    if (blanks.length === 0) return;
+
+    const ids = new Set(blanks.map((expense) => expense.id));
+    setAll(latest.current.filter((expense) => !ids.has(expense.id)));
+
+    for (const id of ids) {
+      const pending = saveTimers.current.get(id);
+      if (pending !== undefined) clearTimeout(pending);
+      saveTimers.current.delete(id);
+      order.current.delete(id);
+    }
+
+    // Most were never written; deleting those is a harmless no-op.
+    void supabase
+      .from("expenses")
+      .delete()
+      .in("id", [...ids]);
+  };
 
   /** Nobody is checked off on a scanned item; that's still the house's call. */
   const addScannedItems = (receiptId: string, items: ScannedItem[]) => {
@@ -273,6 +293,7 @@ export function useExpenseStore() {
     addExpense,
     addScannedItems,
     removeExpense,
+    discardBlankRows,
   };
 }
 

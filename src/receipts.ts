@@ -116,5 +116,31 @@ export function useReceipts() {
     if (settleError) setError("Couldn't record that payment.");
   }, []);
 
-  return { receipts, settled, loading, error, saveReceipt, removeReceipt, markSettled, reload: load };
+  /** Squaring up the whole house at once: one row per debt being cleared. */
+  const markManySettled = useCallback(async (pairs: { receiptId: string; debtor: Person }[]) => {
+    if (pairs.length === 0) return;
+
+    setSettled((current) => {
+      const next = new Set(current);
+      for (const pair of pairs) next.add(settledKey(pair.receiptId, pair.debtor));
+      return next;
+    });
+
+    const { error: settleError } = await supabase
+      .from("settlements")
+      .insert(pairs.map((pair) => ({ receipt_id: pair.receiptId, debtor: pair.debtor })));
+    if (settleError) setError("Couldn't record that. Refresh to see what was saved.");
+  }, []);
+
+  return {
+    receipts,
+    settled,
+    loading,
+    error,
+    saveReceipt,
+    removeReceipt,
+    markSettled,
+    markManySettled,
+    reload: load,
+  };
 }
