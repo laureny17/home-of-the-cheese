@@ -35,10 +35,10 @@ function toBase64(bytes: Uint8Array): string {
 }
 
 /** Returns null when the browser has no decoder for this format. */
-async function downscaleToJpeg(file: File): Promise<string | null> {
+async function downscaleToJpeg(image: Blob): Promise<string | null> {
   let bitmap: ImageBitmap;
   try {
-    bitmap = await createImageBitmap(file);
+    bitmap = await createImageBitmap(image);
   } catch {
     return null;
   }
@@ -61,13 +61,33 @@ async function downscaleToJpeg(file: File): Promise<string | null> {
   return dataUrl.slice(dataUrl.indexOf(",") + 1);
 }
 
+/**
+ * Only Safari decodes HEIC natively, so elsewhere an iPhone photo is decoded
+ * in JavaScript. The decoder is large, so it loads only when a HEIC arrives.
+ */
+async function heicToJpeg(file: File): Promise<Blob | null> {
+  try {
+    const { default: heic2any } = await import("heic2any");
+    const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: JPEG_QUALITY });
+    return Array.isArray(converted) ? (converted[0] ?? null) : converted;
+  } catch {
+    return null;
+  }
+}
+
 async function prepareUpload(file: File): Promise<{ imageBase64: string; mimeType: string }> {
   const downscaled = await downscaleToJpeg(file);
   if (downscaled !== null) return { imageBase64: downscaled, mimeType: "image/jpeg" };
 
-  // No browser decodes HEIC (Chrome refuses it outright), but Gemini reads it
-  // directly, so send the original bytes rather than converting.
   const mimeType = mimeTypeOf(file);
+  if (mimeType === "image/heic" || mimeType === "image/heif") {
+    const jpeg = await heicToJpeg(file);
+    const converted = jpeg && (await downscaleToJpeg(jpeg));
+    if (converted) return { imageBase64: converted, mimeType: "image/jpeg" };
+  }
+
+  // Last resort: Gemini reads HEIC directly, so a small enough original can
+  // still go as-is if conversion failed.
   if (!ACCEPTED_TYPES.includes(mimeType)) {
     throw new Error("That file isn't a photo we can read. Try a JPEG, PNG, WebP or HEIC.");
   }
