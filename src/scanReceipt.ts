@@ -7,8 +7,11 @@ const JPEG_QUALITY = 0.85;
 /** What Gemini will read directly, whether or not the browser can decode it. */
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 
-/** Roughly the 12MB the endpoint accepts once base64 inflates the bytes by a third. */
-const MAX_RAW_BYTES = 9_000_000;
+/**
+ * Vercel rejects function request bodies over 4.5MB before our code runs, and
+ * base64 inflates the bytes by a third, so the raw file has to stay near 3MB.
+ */
+const MAX_RAW_BYTES = 3_200_000;
 
 const GENERIC_FAILURE = "Couldn't read the receipt. Try again.";
 
@@ -69,7 +72,7 @@ async function prepareUpload(file: File): Promise<{ imageBase64: string; mimeTyp
     throw new Error("That file isn't a photo we can read. Try a JPEG, PNG, WebP or HEIC.");
   }
   if (file.size > MAX_RAW_BYTES) {
-    throw new Error("That photo is too large to send. Try one under 9MB.");
+    throw new Error("That photo is too large to send. Try a screenshot or a smaller photo of the receipt.");
   }
 
   return { imageBase64: toBase64(new Uint8Array(await file.arrayBuffer())), mimeType };
@@ -92,6 +95,14 @@ export async function scanReceipt(file: File): Promise<ScannedItem[]> {
   // Plain `vite dev` serves the frontend but not api/, so the call 404s.
   if (response.status === 404) {
     throw new Error("Receipt scanning isn't available on this server. Locally, run vercel dev rather than npm run dev.");
+  }
+
+  // Vercel answers these itself, with a plain-text body rather than our JSON.
+  if (response.status === 413) {
+    throw new Error("That photo is too large to send. Try a screenshot or a smaller photo of the receipt.");
+  }
+  if (response.status === 504) {
+    throw new Error("Reading the receipt took too long. Try again.");
   }
 
   const payload: unknown = await response.json().catch(() => null);
