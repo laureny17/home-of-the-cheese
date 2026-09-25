@@ -7,8 +7,11 @@ const JPEG_QUALITY = 0.85;
 /** What Gemini will read directly, whether or not the browser can decode it. */
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 
-/** Roughly the 12MB the endpoint accepts once base64 inflates the bytes by a third. */
-const MAX_RAW_BYTES = 9_000_000;
+/**
+ * Vercel rejects function request bodies over 4.5MB before our code runs, and
+ * base64 inflates the bytes by a third, so the raw file has to stay near 3MB.
+ */
+const MAX_RAW_BYTES = 3_200_000;
 
 const GENERIC_FAILURE = "Couldn't read the receipt. Try again.";
 
@@ -32,10 +35,10 @@ function toBase64(bytes: Uint8Array): string {
 }
 
 /** Returns null when the browser has no decoder for this format. */
-async function downscaleToJpeg(file: File): Promise<string | null> {
+async function downscaleToJpeg(image: Blob): Promise<string | null> {
   let bitmap: ImageBitmap;
   try {
-    bitmap = await createImageBitmap(file);
+    bitmap = await createImageBitmap(image);
   } catch {
     return null;
   }
@@ -58,18 +61,38 @@ async function downscaleToJpeg(file: File): Promise<string | null> {
   return dataUrl.slice(dataUrl.indexOf(",") + 1);
 }
 
+/**
+ * Only Safari decodes HEIC natively, so elsewhere an iPhone photo is decoded
+ * in JavaScript. The decoder is large, so it loads only when a HEIC arrives.
+ */
+async function heicToJpeg(file: File): Promise<Blob | null> {
+  try {
+    const { default: heic2any } = await import("heic2any");
+    const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: JPEG_QUALITY });
+    return Array.isArray(converted) ? (converted[0] ?? null) : converted;
+  } catch {
+    return null;
+  }
+}
+
 async function prepareUpload(file: File): Promise<{ imageBase64: string; mimeType: string }> {
   const downscaled = await downscaleToJpeg(file);
   if (downscaled !== null) return { imageBase64: downscaled, mimeType: "image/jpeg" };
 
-  // No browser decodes HEIC (Chrome refuses it outright), but Gemini reads it
-  // directly, so send the original bytes rather than converting.
   const mimeType = mimeTypeOf(file);
+  if (mimeType === "image/heic" || mimeType === "image/heif") {
+    const jpeg = await heicToJpeg(file);
+    const converted = jpeg && (await downscaleToJpeg(jpeg));
+    if (converted) return { imageBase64: converted, mimeType: "image/jpeg" };
+  }
+
+  // Last resort: Gemini reads HEIC directly, so a small enough original can
+  // still go as-is if conversion failed.
   if (!ACCEPTED_TYPES.includes(mimeType)) {
     throw new Error("That file isn't a photo we can read. Try a JPEG, PNG, WebP or HEIC.");
   }
   if (file.size > MAX_RAW_BYTES) {
-    throw new Error("That photo is too large to send. Try one under 9MB.");
+    throw new Error("That photo is too large to send. Try a screenshot or a smaller photo of the receipt.");
   }
 
   return { imageBase64: toBase64(new Uint8Array(await file.arrayBuffer())), mimeType };
@@ -92,6 +115,14 @@ export async function scanReceipt(file: File): Promise<ScannedItem[]> {
   // Plain `vite dev` serves the frontend but not api/, so the call 404s.
   if (response.status === 404) {
     throw new Error("Receipt scanning isn't available on this server. Locally, run vercel dev rather than npm run dev.");
+  }
+
+  // Vercel answers these itself, with a plain-text body rather than our JSON.
+  if (response.status === 413) {
+    throw new Error("That photo is too large to send. Try a screenshot or a smaller photo of the receipt.");
+  }
+  if (response.status === 504) {
+    throw new Error("Reading the receipt took too long. Try again.");
   }
 
   const payload: unknown = await response.json().catch(() => null);

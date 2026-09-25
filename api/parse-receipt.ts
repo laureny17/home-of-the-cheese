@@ -12,8 +12,8 @@ function geminiClient(apiKey: string): GoogleGenAI {
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 
-/** Inline image data caps the whole request at 20MB, so stay well under it. */
-const MAX_BASE64_LENGTH = 12_000_000;
+/** Vercel caps function request bodies at 4.5MB; leave room for the JSON around the image. */
+const MAX_BASE64_LENGTH = 4_400_000;
 
 const RECEIPT_SCHEMA = {
   type: "object",
@@ -103,7 +103,7 @@ export default {
     }
     if (typeof mimeType !== "string" || !ACCEPTED_TYPES.includes(mimeType)) {
       return Response.json(
-        { error: "That file type isn't supported. Use a JPEG, PNG or WebP photo." },
+        { error: "That file type isn't supported. Use a JPEG, PNG, WebP or HEIC photo." },
         { status: 400 },
       );
     }
