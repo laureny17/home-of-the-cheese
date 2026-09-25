@@ -92,7 +92,7 @@ export default function ExpenseTable({
             onClick={() => fileInput.current?.click()}
             disabled={scanning}
           >
-            {scanning ? "reading receipt\u2026" : "scan a receipt"}
+            {scanning ? "reading receipt\u2026" : "upload a receipt"}
           </button>
           <span className="scan-prompt-note">or add the items by hand below</span>
         </div>
@@ -202,7 +202,7 @@ export default function ExpenseTable({
                       onClick={() => fileInput.current?.click()}
                       disabled={scanning}
                     >
-                      {scanning ? "Reading receipt\u2026" : "Scan a receipt"}
+                      {scanning ? "Reading receipt\u2026" : "Upload a receipt"}
                     </button>
                   )}
                 </div>
@@ -232,7 +232,6 @@ export default function ExpenseTable({
         ref={fileInput}
         type="file"
         accept="image/*,.heic,.heif"
-        capture="environment"
         className="visually-hidden"
         onChange={handleFile}
       />
