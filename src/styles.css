@@ -1054,6 +1054,7 @@ body {
 .settle-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
   margin-top: 14px;
 }
 
@@ -1097,11 +1098,6 @@ body {
   color: var(--muted);
   font-size: 11px;
   text-decoration: none;
-}
-
-.settled-toggle {
-  margin-top: 2px;
-  font-size: 13px;
 }
 
 /* Responsive and preference overrides last, so they win over the rules above. */
@@ -1202,7 +1198,7 @@ body {
 
   /* Settling up is the one thing on the page worth a full-width button. */
   .settle-actions .action {
-    width: 100%;
+    flex: 1;
     height: 34px;
     justify-content: center;
   }
@@ -1330,29 +1326,8 @@ body {
 }
 
 /* Recording a payment: who you are, who you're paying, how much. */
-.settle-paid {
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid var(--rule);
-}
-
-.settle-paid-toggle {
-  padding: 0;
-  border: 0;
-  background: transparent;
-  font-family: inherit;
-  font-size: 13px;
-  color: var(--muted);
-  cursor: pointer;
-}
-
-.settle-paid-toggle:hover {
-  color: var(--ink);
-}
-
-.settle-paid-list {
-  max-height: 160px;
-  margin-top: 6px;
+.payment-history {
+  max-height: 60vh;
   overflow-y: auto;
   overscroll-behavior: contain;
 }

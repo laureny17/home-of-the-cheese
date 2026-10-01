@@ -3,7 +3,7 @@ import { PEOPLE, type Person } from "./people";
 import Modal from "./Modal";
 import { InfoIcon } from "./icons";
 import type { Debt } from "./settle";
-import { outstandingDebts, pairwiseDebts, remainingTransfers } from "./settle";
+import { pairwiseDebts, remainingTransfers } from "./settle";
 import type { Expense } from "./expenses";
 import type { Payment, Receipt, SettledSet } from "./receipts";
 import { formatDate } from "./ReceiptCard";
@@ -241,37 +241,22 @@ export default function SettleSummary({
   settled,
   payments,
   onPay,
-  onSquareUp,
 }: {
   receipts: Receipt[];
   expenses: Expense[];
   settled: SettledSet;
   payments: Payment[];
   onPay: (from: Person, to: Person, amount: number) => Promise<Payment | null>;
-  onSquareUp: (pairs: { receiptId: string; debtor: Person }[], paymentIds: string[]) => void;
 }) {
   const owed = pairwiseDebts(receipts, expenses, settled);
   const openPayments = payments.filter((payment) => !payment.cleared);
   const transfers = remainingTransfers(owed, openPayments);
-  const outstanding = outstandingDebts(receipts, expenses, settled);
   const [showDetail, setShowDetail] = useState(false);
   const [paying, setPaying] = useState(false);
-  const [showPaid, setShowPaid] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   async function pay(from: Person, to: Person, amount: number): Promise<boolean> {
-    const payment = await onPay(from, to, amount);
-    if (!payment) return false;
-
-    // The last payment of the round closes it: the receipts it covered are
-    // settled and the payments stop counting, ready for the next shop.
-    const open = [payment, ...openPayments];
-    if (remainingTransfers(owed, open).length === 0) {
-      onSquareUp(
-        outstanding.map((debt) => ({ receiptId: debt.receiptId, debtor: debt.debtor })),
-        open.map((entry) => entry.id),
-      );
-    }
-    return true;
+    return (await onPay(from, to, amount)) !== null;
   }
 
   return (
@@ -300,31 +285,28 @@ export default function SettleSummary({
         </ul>
       )}
 
-      {openPayments.length > 0 && (
-        <div className="settle-paid">
-          <button
-            type="button"
-            className="settle-paid-toggle"
-            aria-expanded={showPaid}
-            onClick={() => setShowPaid((shown) => !shown)}
-          >
-            {showPaid ? "hide" : "show"} {openPayments.length} paid so far
-          </button>
-          {/* Grows with every payment in a round, so it scrolls rather than pushing the page down. */}
-          {showPaid && (
-            <div className="settle-paid-list">
-              <PaymentList payments={openPayments} />
-            </div>
+      {(transfers.length > 0 || payments.length > 0) && (
+        <div className="settle-actions">
+          {payments.length > 0 && (
+            <button type="button" className="action" onClick={() => setShowHistory(true)}>
+              payment history
+            </button>
+          )}
+          {transfers.length > 0 && (
+            <button type="button" className="action save" onClick={() => setPaying(true)}>
+              settle up
+            </button>
           )}
         </div>
       )}
 
-      {transfers.length > 0 && (
-        <div className="settle-actions">
-          <button type="button" className="action save" onClick={() => setPaying(true)}>
-            settle up
-          </button>
-        </div>
+      {showHistory && (
+        <Modal title="payment history" onClose={() => setShowHistory(false)}>
+          {/* Every payment ever made, so it scrolls rather than growing past the screen. */}
+          <div className="payment-history">
+            <PaymentList payments={payments} />
+          </div>
+        </Modal>
       )}
 
       {paying && (

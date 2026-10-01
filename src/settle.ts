@@ -92,69 +92,16 @@ export function settleUp(debts: Debt[]): Debt[] {
 }
 
 /**
- * What is still left to pay once the payments made so far are taken off.
- * Paying someone is the same as them owing you that much back, so netting
- * does the rest: an overpayment simply turns around.
+ * What is left to pay: everything owed minus everything paid. Paying someone
+ * is the same as them owing you that much back, so netting does the rest, and
+ * it doesn't matter which receipt a payment was meant for.
+ *
+ * A cleared payment is skipped because the receipts it paid for were marked
+ * settled at the time, so the debt it covered is already out of `owed`.
  */
 export function remainingTransfers(owed: Debt[], payments: Payment[]): Debt[] {
   const paidBack = payments
     .filter((payment) => !payment.cleared)
     .map((payment): Debt => ({ from: payment.to, to: payment.from, amount: payment.amount }));
   return settleUp([...owed, ...paidBack]);
-}
-
-export type OutstandingDebt = { receiptId: string; debtor: Person; owedTo: Person; amount: number };
-
-/**
- * Every receipt-and-person still owing something, which is what a settle-up
- * clears. Netting rearranges who pays whom, so a transfer cannot be traced
- * back to receipts on its own -- confirming the whole plan settles all of it.
- */
-export function outstandingDebts(
-  receipts: Receipt[],
-  expenses: Expense[],
-  settled: SettledSet,
-): OutstandingDebt[] {
-  const rows: OutstandingDebt[] = [];
-
-  for (const receipt of receipts) {
-    const payer = receipt.payer;
-    if (payer === null) continue;
-
-    const split = computeSplit(expensesFor(expenses, receipt.id));
-    for (const entry of split.people) {
-      if (entry.person === payer || entry.total <= CENT) continue;
-      if (settled.has(settledKey(receipt.id, entry.person))) continue;
-      rows.push({
-        receiptId: receipt.id,
-        debtor: entry.person,
-        owedTo: payer,
-        amount: entry.total,
-      });
-    }
-  }
-
-  return rows;
-}
-
-/**
- * A receipt is done with when everyone who owed something on it has paid.
- * One with no payer, or nothing owed, is never "settled" -- there was nothing
- * to settle -- so it stays in the list.
- */
-export function isReceiptSettled(
-  receipt: Receipt,
-  expenses: Expense[],
-  settled: SettledSet,
-): boolean {
-  const payer = receipt.payer;
-  if (payer === null) return false;
-
-  const split = computeSplit(expensesFor(expenses, receipt.id));
-  const debtors = split.people.filter(
-    (entry) => entry.person !== payer && entry.total > CENT,
-  );
-  if (debtors.length === 0) return false;
-
-  return debtors.every((entry) => settled.has(settledKey(receipt.id, entry.person)));
 }
