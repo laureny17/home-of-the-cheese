@@ -1,6 +1,6 @@
 import { PEOPLE, type Person } from "./people";
 import { expensesFor, type Expense } from "./expenses";
-import { settledKey, type Receipt, type SettledSet } from "./receipts";
+import { settledKey, type Payment, type Receipt, type SettledSet } from "./receipts";
 import { computeSplit } from "./split";
 
 export type Debt = { from: Person; to: Person; amount: number };
@@ -58,6 +58,9 @@ export function settleUp(debts: Debt[]): Debt[] {
     net.set(debt.from, (net.get(debt.from) ?? 0) - debt.amount);
     net.set(debt.to, (net.get(debt.to) ?? 0) + debt.amount);
   }
+  // Shares are fractions of a cent but payments are whole cents, so without
+  // this a debt paid in full would leave a sliver that never reaches zero.
+  for (const [person, amount] of net) net.set(person, Math.round(amount * 100) / 100);
 
   const owing = PEOPLE.filter((person) => (net.get(person) ?? 0) < -CENT).sort(
     (a, b) => (net.get(a) ?? 0) - (net.get(b) ?? 0),
@@ -86,6 +89,18 @@ export function settleUp(debts: Debt[]): Debt[] {
   }
 
   return transfers;
+}
+
+/**
+ * What is still left to pay once the payments made so far are taken off.
+ * Paying someone is the same as them owing you that much back, so netting
+ * does the rest: an overpayment simply turns around.
+ */
+export function remainingTransfers(owed: Debt[], payments: Payment[]): Debt[] {
+  const paidBack = payments
+    .filter((payment) => !payment.cleared)
+    .map((payment): Debt => ({ from: payment.to, to: payment.from, amount: payment.amount }));
+  return settleUp([...owed, ...paidBack]);
 }
 
 export type OutstandingDebt = { receiptId: string; debtor: Person; owedTo: Person; amount: number };

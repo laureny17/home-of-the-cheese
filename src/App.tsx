@@ -86,7 +86,9 @@ export default function App() {
               receipts={receipts}
               expenses={store.expenses}
               settled={receiptStore.settled}
-              onSettleAll={(pairs) => void receiptStore.markManySettled(pairs)}
+              payments={receiptStore.payments}
+              onPay={receiptStore.recordPayment}
+              onSquareUp={(pairs, paymentIds) => void receiptStore.squareUp(pairs, paymentIds)}
             />
             <div className="receipt-list">
               {shown.map((receipt) => (
