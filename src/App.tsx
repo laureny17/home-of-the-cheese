@@ -87,8 +87,6 @@ export default function App() {
                   onToggle={() => toggle(receipt.id)}
                   onChange={receiptStore.saveReceipt}
                   onDelete={() => void receiptStore.removeReceipt(receipt.id)}
-                  settled={receiptStore.settled}
-                  onSettle={(debtor) => void receiptStore.markSettled(receipt.id, debtor)}
                 />
               ))}
             </div>
