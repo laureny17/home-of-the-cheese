@@ -28,7 +28,10 @@ export type Payment = {
   amount: number;
   /** ISO timestamp. */
   createdAt: string;
-  /** Once the house is square the receipts it paid for are settled, and it stops counting. */
+  /**
+   * Set on payments from before balances were simply owed minus paid: the
+   * receipts they paid for were marked settled then, so they no longer count.
+   */
   cleared: boolean;
 };
 
@@ -182,35 +185,6 @@ export function useReceipts() {
     [],
   );
 
-  /**
-   * Once the payments leave everyone square, the receipts they covered are
-   * marked settled and the payments cleared in one transaction, so the same
-   * money is never counted twice.
-   */
-  const squareUp = useCallback(
-    async (pairs: { receiptId: string; debtor: Person }[], paymentIds: string[]) => {
-      const { error: squareError } = await supabase.rpc("square_up", {
-        pairs,
-        payment_ids: paymentIds,
-      });
-      if (squareError) {
-        setError("Everyone's square, but the receipts couldn't be marked settled. Refresh to retry.");
-        return;
-      }
-
-      const clearing = new Set(paymentIds);
-      setSettled((current) => {
-        const next = new Set(current);
-        for (const pair of pairs) next.add(settledKey(pair.receiptId, pair.debtor));
-        return next;
-      });
-      setPayments((current) =>
-        current.map((payment) => (clearing.has(payment.id) ? { ...payment, cleared: true } : payment)),
-      );
-    },
-    [],
-  );
-
   return {
     receipts,
     settled,
@@ -221,7 +195,6 @@ export function useReceipts() {
     removeReceipt,
     markSettled,
     recordPayment,
-    squareUp,
     reload: load,
   };
 }
