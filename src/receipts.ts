@@ -20,6 +20,27 @@ type ReceiptRow = {
 
 type SettlementRow = { receipt_id: string; debtor: string };
 
+/** Money one person has sent another toward what they owe. */
+export type Payment = {
+  id: string;
+  from: Person;
+  to: Person;
+  amount: number;
+  /** ISO timestamp. */
+  createdAt: string;
+  /** Once the house is square the receipts it paid for are settled, and it stops counting. */
+  cleared: boolean;
+};
+
+type PaymentRow = {
+  id: string;
+  from_person: string;
+  to_person: string;
+  amount: number | string;
+  created_at: string;
+  cleared_at: string | null;
+};
+
 /** Who has already squared up on a receipt, as `${receiptId}:${person}`. */
 export type SettledSet = ReadonlySet<string>;
 
@@ -46,20 +67,25 @@ export function newReceipt(): Receipt {
 export function useReceipts() {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [settled, setSettled] = useState<SettledSet>(new Set<string>());
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [receiptResult, settlementResult] = await Promise.all([
+    const [receiptResult, settlementResult, paymentResult] = await Promise.all([
       supabase
         .from("receipts")
         .select("id, name, purchased_on, payer")
         .order("purchased_on", { ascending: false })
         .order("created_at", { ascending: false }),
       supabase.from("settlements").select("receipt_id, debtor"),
+      supabase
+        .from("payments")
+        .select("id, from_person, to_person, amount, created_at, cleared_at")
+        .order("created_at", { ascending: false }),
     ]);
 
-    if (receiptResult.error || settlementResult.error) {
+    if (receiptResult.error || settlementResult.error || paymentResult.error) {
       setError("Couldn't load receipts. Check your connection and refresh.");
       setLoading(false);
       return;
@@ -71,6 +97,21 @@ export function useReceipts() {
       if (isPerson(row.debtor)) marks.add(settledKey(row.receipt_id, row.debtor));
     }
     setSettled(marks);
+    setPayments(
+      (paymentResult.data as PaymentRow[]).flatMap((row): Payment[] => {
+        if (!isPerson(row.from_person) || !isPerson(row.to_person)) return [];
+        return [
+          {
+            id: row.id,
+            from: row.from_person,
+            to: row.to_person,
+            amount: Number(row.amount),
+            createdAt: row.created_at,
+            cleared: row.cleared_at !== null,
+          },
+        ];
+      }),
+    );
     setError(null);
     setLoading(false);
   }, []);
@@ -116,31 +157,71 @@ export function useReceipts() {
     if (settleError) setError("Couldn't record that payment.");
   }, []);
 
-  /** Squaring up the whole house at once: one row per debt being cleared. */
-  const markManySettled = useCallback(async (pairs: { receiptId: string; debtor: Person }[]) => {
-    if (pairs.length === 0) return;
+  /** Like settling, one-way: the table has no update or delete policy. */
+  const recordPayment = useCallback(
+    async (from: Person, to: Person, amount: number): Promise<Payment | null> => {
+      const payment: Payment = {
+        id: crypto.randomUUID(),
+        from,
+        to,
+        amount,
+        createdAt: new Date().toISOString(),
+        cleared: false,
+      };
+      const { error: payError } = await supabase
+        .from("payments")
+        .insert({ id: payment.id, from_person: from, to_person: to, amount });
+      if (payError) {
+        setError("Couldn't record that payment. Try again.");
+        return null;
+      }
+      setPayments((current) => [payment, ...current]);
+      setError(null);
+      return payment;
+    },
+    [],
+  );
 
-    setSettled((current) => {
-      const next = new Set(current);
-      for (const pair of pairs) next.add(settledKey(pair.receiptId, pair.debtor));
-      return next;
-    });
+  /**
+   * Once the payments leave everyone square, the receipts they covered are
+   * marked settled and the payments cleared in one transaction, so the same
+   * money is never counted twice.
+   */
+  const squareUp = useCallback(
+    async (pairs: { receiptId: string; debtor: Person }[], paymentIds: string[]) => {
+      const { error: squareError } = await supabase.rpc("square_up", {
+        pairs,
+        payment_ids: paymentIds,
+      });
+      if (squareError) {
+        setError("Everyone's square, but the receipts couldn't be marked settled. Refresh to retry.");
+        return;
+      }
 
-    const { error: settleError } = await supabase
-      .from("settlements")
-      .insert(pairs.map((pair) => ({ receipt_id: pair.receiptId, debtor: pair.debtor })));
-    if (settleError) setError("Couldn't record that. Refresh to see what was saved.");
-  }, []);
+      const clearing = new Set(paymentIds);
+      setSettled((current) => {
+        const next = new Set(current);
+        for (const pair of pairs) next.add(settledKey(pair.receiptId, pair.debtor));
+        return next;
+      });
+      setPayments((current) =>
+        current.map((payment) => (clearing.has(payment.id) ? { ...payment, cleared: true } : payment)),
+      );
+    },
+    [],
+  );
 
   return {
     receipts,
     settled,
+    payments,
     loading,
     error,
     saveReceipt,
     removeReceipt,
     markSettled,
-    markManySettled,
+    recordPayment,
+    squareUp,
     reload: load,
   };
 }
