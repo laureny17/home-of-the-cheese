@@ -70,10 +70,7 @@ function PaymentList({ payments }: { payments: Payment[] }) {
             <strong>{payment.from}</strong> paid <strong>{payment.to}</strong>{" "}
             <span className="payment-date">{paidOn(payment)}</span>
           </span>
-          <span className="settle-amount">
-            {payment.cleared && <span className="payment-cleared">settled</span>}
-            {formatMoney(payment.amount)}
-          </span>
+          <span className="settle-amount">{formatMoney(payment.amount)}</span>
         </li>
       ))}
     </ul>
@@ -301,13 +298,6 @@ export default function SettleSummary({
             <DebtLine key={`${debt.from}-${debt.to}`} debt={debt} />
           ))}
         </ul>
-      )}
-
-      {openPayments.length > 0 && (
-        <p className="settle-paid-note">
-          {formatMoney(openPayments.reduce((sum, payment) => sum + payment.amount, 0))} paid so far
-          this round
-        </p>
       )}
 
       {(transfers.length > 0 || payments.length > 0) && (

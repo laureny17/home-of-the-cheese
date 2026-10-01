@@ -1331,23 +1331,10 @@ body {
 }
 
 /* Recording a payment: who you are, who you're paying, how much. */
-.settle-paid-note {
-  margin: 8px 0 0;
-  font-size: 13px;
-  color: var(--muted);
-}
-
 .payment-history {
   max-height: 60vh;
   overflow-y: auto;
   overscroll-behavior: contain;
-}
-
-/* Paid in an earlier round: kept as a record, but no longer counting. */
-.payment-cleared {
-  margin-right: 8px;
-  font-size: 12px;
-  color: var(--faint);
 }
 
 .payment-date {
