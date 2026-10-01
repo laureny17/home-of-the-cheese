@@ -148,19 +148,7 @@ export function useReceipts() {
     if (deleteError) setError("Couldn't delete that receipt.");
   }, []);
 
-  /**
-   * One-way by design. The table has no update or delete policy, so this can
-   * only ever add a row.
-   */
-  const markSettled = useCallback(async (receiptId: string, debtor: Person) => {
-    setSettled((current) => new Set(current).add(settledKey(receiptId, debtor)));
-    const { error: settleError } = await supabase
-      .from("settlements")
-      .insert({ receipt_id: receiptId, debtor });
-    if (settleError) setError("Couldn't record that payment.");
-  }, []);
-
-  /** Like settling, one-way: the table has no update or delete policy. */
+  /** One-way by design: the table has no update or delete policy. */
   const recordPayment = useCallback(
     async (from: Person, to: Person, amount: number): Promise<Payment | null> => {
       const payment: Payment = {
@@ -193,7 +181,6 @@ export function useReceipts() {
     error,
     saveReceipt,
     removeReceipt,
-    markSettled,
     recordPayment,
     reload: load,
   };
