@@ -70,7 +70,10 @@ function PaymentList({ payments }: { payments: Payment[] }) {
             <strong>{payment.from}</strong> paid <strong>{payment.to}</strong>{" "}
             <span className="payment-date">{paidOn(payment)}</span>
           </span>
-          <span className="settle-amount">{formatMoney(payment.amount)}</span>
+          <span className="settle-amount">
+            {payment.cleared && <span className="payment-cleared">settled</span>}
+            {formatMoney(payment.amount)}
+          </span>
         </li>
       ))}
     </ul>
@@ -256,7 +259,7 @@ export default function SettleSummary({
   const outstanding = outstandingDebts(receipts, expenses, settled);
   const [showDetail, setShowDetail] = useState(false);
   const [paying, setPaying] = useState(false);
-  const [showPaid, setShowPaid] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   async function pay(from: Person, to: Person, amount: number): Promise<boolean> {
     const payment = await onPay(from, to, amount);
@@ -301,30 +304,34 @@ export default function SettleSummary({
       )}
 
       {openPayments.length > 0 && (
-        <div className="settle-paid">
-          <button
-            type="button"
-            className="settle-paid-toggle"
-            aria-expanded={showPaid}
-            onClick={() => setShowPaid((shown) => !shown)}
-          >
-            {showPaid ? "hide" : "show"} {openPayments.length} paid so far
-          </button>
-          {/* Grows with every payment in a round, so it scrolls rather than pushing the page down. */}
-          {showPaid && (
-            <div className="settle-paid-list">
-              <PaymentList payments={openPayments} />
-            </div>
+        <p className="settle-paid-note">
+          {formatMoney(openPayments.reduce((sum, payment) => sum + payment.amount, 0))} paid so far
+          this round
+        </p>
+      )}
+
+      {(transfers.length > 0 || payments.length > 0) && (
+        <div className="settle-actions">
+          {payments.length > 0 && (
+            <button type="button" className="action" onClick={() => setShowHistory(true)}>
+              payment history
+            </button>
+          )}
+          {transfers.length > 0 && (
+            <button type="button" className="action save" onClick={() => setPaying(true)}>
+              settle up
+            </button>
           )}
         </div>
       )}
 
-      {transfers.length > 0 && (
-        <div className="settle-actions">
-          <button type="button" className="action save" onClick={() => setPaying(true)}>
-            settle up
-          </button>
-        </div>
+      {showHistory && (
+        <Modal title="payment history" onClose={() => setShowHistory(false)}>
+          {/* Every payment ever made, so it scrolls rather than growing past the screen. */}
+          <div className="payment-history">
+            <PaymentList payments={payments} />
+          </div>
+        </Modal>
       )}
 
       {paying && (
