@@ -1336,11 +1336,25 @@ body {
   border-top: 1px solid var(--rule);
 }
 
-.settle-subheading {
-  margin: 0 0 2px;
+.settle-paid-toggle {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
   font-size: 13px;
-  font-weight: 500;
   color: var(--muted);
+  cursor: pointer;
+}
+
+.settle-paid-toggle:hover {
+  color: var(--ink);
+}
+
+.settle-paid-list {
+  max-height: 160px;
+  margin-top: 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .payment-date {

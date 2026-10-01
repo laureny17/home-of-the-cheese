@@ -256,6 +256,7 @@ export default function SettleSummary({
   const outstanding = outstandingDebts(receipts, expenses, settled);
   const [showDetail, setShowDetail] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [showPaid, setShowPaid] = useState(false);
 
   async function pay(from: Person, to: Person, amount: number): Promise<boolean> {
     const payment = await onPay(from, to, amount);
@@ -301,8 +302,20 @@ export default function SettleSummary({
 
       {openPayments.length > 0 && (
         <div className="settle-paid">
-          <h3 className="settle-subheading">paid so far</h3>
-          <PaymentList payments={openPayments} />
+          <button
+            type="button"
+            className="settle-paid-toggle"
+            aria-expanded={showPaid}
+            onClick={() => setShowPaid((shown) => !shown)}
+          >
+            {showPaid ? "hide" : "show"} {openPayments.length} paid so far
+          </button>
+          {/* Grows with every payment in a round, so it scrolls rather than pushing the page down. */}
+          {showPaid && (
+            <div className="settle-paid-list">
+              <PaymentList payments={openPayments} />
+            </div>
+          )}
         </div>
       )}
 
