@@ -77,6 +77,9 @@ export default function App() {
               payments={receiptStore.payments}
               onPay={receiptStore.recordPayment}
             />
+            <button type="button" className="new-receipt" onClick={() => void addReceipt()}>
+              + new receipt
+            </button>
             <div className="receipt-list">
               {shown.map((receipt) => (
                 <ReceiptCard
@@ -94,9 +97,6 @@ export default function App() {
               <p className="store-status">no receipts yet. add one to get started.</p>
             )}
 
-            <button type="button" className="add-row add-receipt" onClick={() => void addReceipt()}>
-              + New receipt
-            </button>
             <Pagination page={current} pageCount={pageCount} onChange={setPage} />
           </>
         )}
