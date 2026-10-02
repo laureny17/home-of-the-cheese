@@ -285,27 +285,29 @@ export default function SettleSummary({
         </ul>
       )}
 
-      {(transfers.length > 0 || payments.length > 0) && (
-        <div className="settle-actions">
-          {payments.length > 0 && (
-            <button type="button" className="action" onClick={() => setShowHistory(true)}>
-              payment history
-            </button>
-          )}
-          {transfers.length > 0 && (
-            <button type="button" className="action save" onClick={() => setPaying(true)}>
-              settle up
-            </button>
-          )}
-        </div>
-      )}
+      <div className="settle-actions">
+        <button type="button" className="action" onClick={() => setShowHistory(true)}>
+          payment history
+        </button>
+        {transfers.length > 0 && (
+          <button type="button" className="action save" onClick={() => setPaying(true)}>
+            settle up
+          </button>
+        )}
+      </div>
 
       {showHistory && (
         <Modal title="payment history" onClose={() => setShowHistory(false)}>
-          {/* Every payment ever made, so it scrolls rather than growing past the screen. */}
-          <div className="payment-history">
-            <PaymentList payments={payments} />
-          </div>
+          {payments.length === 0 ? (
+            <p className="confirm-text pay-none">
+              no payments yet. ones recorded with settle up will show here.
+            </p>
+          ) : (
+            // Every payment ever made, so it scrolls rather than growing past the screen.
+            <div className="payment-history">
+              <PaymentList payments={payments} />
+            </div>
+          )}
         </Modal>
       )}
 
